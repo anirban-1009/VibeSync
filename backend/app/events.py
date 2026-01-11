@@ -33,7 +33,7 @@ async def join_room(sid, data):
     if not room_id:
         return
 
-    sio.enter_room(sid, room_id)
+    await sio.enter_room(sid, room_id)
 
     # Init room if not exists
     if room_id not in rooms:
@@ -83,27 +83,26 @@ async def leave_session(sid, data):
 @sio.event
 async def add_to_queue(sid, data):
     """
-    Data: { room_id, track: { uri, name, artist, image, added_by } }
+    Data: { room_id, track: { uri, name, artist, image, duration_ms } }
     """
     room_id = data.get("room_id")
     track = data.get("track")
-    user_id = sid_map.get(sid, {}).get("user_id", "anonymous")
+
+    session = sid_map.get(sid, {})
+    user_id = session.get("user_id", "anonymous")
 
     if room_id and track and room_id in rooms:
         room = rooms[room_id]
 
-        # Add 'added_by' to track if present in data, otherwise anonymous
         track["uuid"] = str(uuid.uuid4())
         track["added_by"] = user_id
 
-        # If nothing playing, play immediately
         if room["current_track"] is None:
             room["current_track"] = track
             room["is_playing"] = True
             await sio.emit("play_track", track, room=room_id)
             await sio.emit("room_state", room, room=room_id)
         else:
-            # Add to queue
             room["queue"].append(track)
             await sio.emit("queue_updated", room["queue"], room=room_id)
 
