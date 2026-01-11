@@ -171,7 +171,7 @@ function App() {
       if (!deviceId || !token) return
 
       try {
-        await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+        const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
           method: 'PUT',
           body: JSON.stringify({ uris: [track.uri] }),
           headers: {
@@ -179,8 +179,13 @@ function App() {
             'Authorization': `Bearer ${token}`
           },
         });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Spotify API Error:', errorData);
+        }
       } catch (e) {
-        console.error(e)
+        console.error('Network/Fetch Error:', e)
       }
     }
 
@@ -243,7 +248,7 @@ function App() {
   }, [currentTrack])
 
   const addLog = (msg) => {
-    // console.log(msg) 
+    // console.log(msg)
   }
 
   const joinRoom = () => {
