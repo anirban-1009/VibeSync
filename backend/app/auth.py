@@ -30,7 +30,7 @@ async def login():
 async def callback(code: str):
     token_info = sp_oauth.get_access_token(code)
     access_token = token_info["access_token"]
-    refresh_token = token_info["refresh_token"]
+    _refresh_token = token_info["refresh_token"]
 
     # Redirect back to frontend with token
     params = urllib.parse.urlencode({"token": access_token})
