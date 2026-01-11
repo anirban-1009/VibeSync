@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
-# Setup FastAPI
 app = FastAPI()
 
 app.add_middleware(
@@ -16,6 +15,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Setup Socket.IO
 sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
 socket_app = socketio.ASGIApp(sio, app)

@@ -1,9 +1,8 @@
-import app.events  # This registers the event handlers
+import app.events
 import uvicorn
 from app.auth import router as auth_router
 from app.server import app
 
-# Mount Routers
 app.include_router(auth_router)
 
 if __name__ == "__main__":

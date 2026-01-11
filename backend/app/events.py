@@ -6,13 +6,11 @@ from app.state import rooms, sid_map
 
 @sio.event
 async def connect(sid, environ):
-    # print(f"Client connected: {sid}")
     pass
 
 
 @sio.event
 async def disconnect(sid):
-    # print(f"Client disconnected: {sid}")
     if sid in sid_map:
         user_info = sid_map[sid]
         room_id = user_info.get("room_id")

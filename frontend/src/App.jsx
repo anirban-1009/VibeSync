@@ -11,6 +11,7 @@ import Queue from './components/Queue'
 import RoomHeader from './components/RoomHeader'
 import Search from './components/Search'
 
+
 // Connect to the backend
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 const socket = io(BACKEND_URL)
@@ -20,30 +21,25 @@ function App() {
   const [roomId, setRoomId] = useState('')
   const [joinedRoom, setJoinedRoom] = useState(null)
 
-  // App State
   const [token, setToken] = useState(null)
   const [player, setPlayer] = useState(null)
   const [deviceId, setDeviceId] = useState(null)
 
-  // User Data
   const [userProfile, setUserProfile] = useState(null)
   const [usersInRoom, setUsersInRoom] = useState([])
 
-  // Music State
   const [currentTrack, setCurrentTrack] = useState(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
   const [duration, setDuration] = useState(0)
   const [queue, setQueue] = useState([])
   const [history, setHistory] = useState([])
-  const [activeTab, setActiveTab] = useState('queue') // 'queue' or 'history'
+  const [activeTab, setActiveTab] = useState('queue')
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
 
-  // Logs (kept for debug, but hidden mostly)
   const [logs, setLogs] = useState([])
 
-  // Debounce search
   const searchTimeout = useRef(null)
 
   useEffect(() => {

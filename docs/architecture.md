@@ -70,9 +70,9 @@ graph TD
     Auth -.->|Redirect| SpotifyAccounts
     SpotifyAccounts -.->|Callback Code| Auth
     
-    App -->|Search & Metadata (REST)| SpotifyAPI
+    App -->|Search & Metadata via REST| SpotifyAPI
     SpotifySDK <==>|Audio Stream| SpotifyAPI
-    Events -.->|API Calls (Optional)| SpotifyAPI
+    Events -.->|API Calls - Optional| SpotifyAPI
 ```
 
 ## Module Descriptions
