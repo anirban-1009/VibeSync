@@ -71,7 +71,7 @@ For a detailed technical breakdown, please refer to the [Architecture Documentat
     
     # Create .env file
     # Ensure CLIENT_ID, CLIENT_SECRET, and FRONTEND_URL are set
-    uv run uvicorn app.main:socket_app --reload
+    uv run uvicorn app.server:socket_app --reload
     ```
 
 3.  **Frontend Setup**
