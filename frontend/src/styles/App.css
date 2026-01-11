@@ -1,0 +1,44 @@
+.app-container {
+    width: 100%;
+}
+
+.dashboard {
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    max-width: 1200px;
+    width: 100%;
+}
+
+.main-panel {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 3rem;
+    flex-wrap: wrap;
+}
+
+.left-column {
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.queue-panel {
+    width: 380px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+    .main-panel {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .left-column,
+    .queue-panel {
+        width: 100%;
+        max-width: 450px;
+    }
+}

@@ -1,0 +1,155 @@
+.queue-panel h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+
+.queue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    /* Allow scrolling if list is long, but maintain min height */
+    min-height: 300px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.queue-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.queue-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.queue-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    border-radius: 8px;
+    transition: background 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.queue-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.queue-item img {
+    width: 48px;
+    height: 48px;
+    border-radius: 4px;
+    object-fit: cover;
+    flex-shrink: 0;
+    /* Crucial: Prevent image shrinking */
+}
+
+.queue-info {
+    flex: 1;
+    min-width: 0;
+    /* Enable truncation */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.q-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+
+.q-artist {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.remove-btn {
+    padding: 4px 8px;
+    font-size: 1.2rem;
+    line-height: 1;
+    background: transparent;
+    border: none;
+    opacity: 0.5;
+    cursor: pointer;
+    color: inherit;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+}
+
+.remove-btn:hover {
+    opacity: 1;
+    color: #ffaaaa;
+}
+
+.empty-queue {
+    opacity: 0.5;
+    text-align: center;
+    margin-top: 2rem;
+    font-style: italic;
+}
+
+/* Queue & History Tabs */
+.queue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.queue-tabs {
+    display: flex;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 2px;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-weight: 600;
+}
+
+.added-by-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-left: auto;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    object-fit: cover;
+}
+
+.added-by-initial {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-left: auto;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #444;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.7rem;
+    color: #ccc;
+}

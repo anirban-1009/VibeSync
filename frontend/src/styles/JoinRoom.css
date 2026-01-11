@@ -1,0 +1,5 @@
+/* Shared styles mostly for now */
+.join-controls {
+    display: flex;
+    gap: 10px;
+}

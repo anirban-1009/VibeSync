@@ -1,0 +1,52 @@
+/* Scrollbar styles for search results */
+.search-results::-webkit-scrollbar {
+    width: 8px;
+}
+
+.search-results::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+.result-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.search-input-container {
+    position: relative;
+    width: 100%;
+}
+
+.search-input {
+    width: 100%;
+    padding: 1.2rem 1.5rem;
+    font-size: 1.1rem;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    /* Pill shape */
+    color: white;
+    outline: none;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.search-input:focus {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 20px rgba(188, 140, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.search-panel {
+    /* Override card styles for search panel to be invisible container */
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    backdrop-filter: none !important;
+}
