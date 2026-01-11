@@ -64,7 +64,7 @@ graph TD
     end
 
     %% Data Flow Connections
-    App <==>|Real-time Events (Socket.IO)| Events
+    App <==>|Real-time Events via Socket.IO| Events
     App -->|Auth Request| Auth
     
     Auth -.->|Redirect| SpotifyAccounts
