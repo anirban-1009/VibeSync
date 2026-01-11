@@ -68,7 +68,7 @@ For a detailed technical breakdown, please refer to the [Architecture Documentat
     ```bash
     cd backend
     uv sync
-    
+
     # Create .env file
     # Ensure CLIENT_ID, CLIENT_SECRET, and FRONTEND_URL are set
     uv run uvicorn app.server:socket_app --reload
@@ -90,3 +90,59 @@ For a detailed technical breakdown, please refer to the [Architecture Documentat
 2.  **Join/Create**: Enter a Room ID to start a new session or join an existing one.
 3.  **Invite**: Click "Share" to copy the room link and send it to friends.
 4.  **Jam**: Search for songs, add them to the queue, and enjoy the synchronized music experience.
+
+## Documentation
+
+### Development Documentation
+
+- **[CI/CD Setup Guide](CI_CD_SETUP.md)** - GitHub Actions workflows, pre-commit hooks, and Dependabot configuration
+- **[Pre-commit Guide](.github/PRE_COMMIT_GUIDE.md)** - Detailed guide on setting up and using pre-commit hooks
+- **[Versioning Guide](VERSIONING.md)** - Semantic versioning strategy for frontend and backend
+- **[Scripts Documentation](scripts/README.md)** - Automated tooling and version bumping scripts
+- **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Common issues and solutions for Spotify playback
+
+### Quick Links
+
+| Topic | Description |
+|-------|-------------|
+| [Architecture](docs/architecture.md) | Technical architecture and design decisions |
+| [CI/CD](CI_CD_SETUP.md) | Continuous integration and deployment setup |
+| [Versioning](VERSIONING.md) | How to manage and bump versions |
+| [Troubleshooting](TROUBLESHOOTING.md) | Fixing common Spotify issues |
+
+## Contributing
+
+### Development Workflow
+
+1. **Create a feature branch** from `dev`:
+   ```bash
+   git checkout dev
+   git pull
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Make your changes** and commit using conventional commits:
+   ```bash
+   git commit -m "feat(component): add new feature"
+   ```
+
+3. **Push and create a PR** to `dev`:
+   ```bash
+   git push -u origin feature/your-feature-name
+   ```
+
+4. **CI checks will run** - Ensure all workflows pass before merging
+
+### Version Bumping
+
+Use the automated script to bump versions:
+
+```bash
+# Bump frontend patch version
+./scripts/bump-version.sh frontend patch
+
+# Bump backend minor version
+./scripts/bump-version.sh backend minor
+```
+
+See [scripts/README.md](scripts/README.md) for more details.
