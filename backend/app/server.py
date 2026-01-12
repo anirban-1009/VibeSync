@@ -18,5 +18,10 @@ app.add_middleware(
 sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
 socket_app = socketio.ASGIApp(sio, app)
 
+# Import and register routes
+from app.auth import router as auth_router  # noqa: E402
+
+app.include_router(auth_router)
+
 # Import events to register socket event handlers
 import app.events  # noqa: E402
