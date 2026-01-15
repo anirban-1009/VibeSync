@@ -130,9 +130,13 @@ function App() {
 
       const params = new URLSearchParams(window.location.search)
       const urlRoom = params.get('room')
-      if (urlRoom && !joinedRoom) {
-        socket.emit('join_room', { room_id: urlRoom, user_profile: userProfile })
-        setJoinedRoom(urlRoom)
+      const targetRoom = urlRoom || joinedRoom
+
+      if (targetRoom) {
+        const currentToken = token || localStorage.getItem('spotify_access_token');
+        addLog(`Re-joining room: ${targetRoom}`)
+        socket.emit('join_room', { room_id: targetRoom, user_profile: userProfile, token: currentToken })
+        if (!joinedRoom) setJoinedRoom(targetRoom)
       }
     }
 
@@ -253,7 +257,7 @@ function App() {
 
   const joinRoom = () => {
     if (roomId.trim()) {
-      socket.emit('join_room', { room_id: roomId, user_profile: userProfile })
+      socket.emit('join_room', { room_id: roomId, user_profile: userProfile, token: token })
       setJoinedRoom(roomId)
     }
   }
@@ -366,6 +370,14 @@ function App() {
     window.location.href = `${BACKEND_URL}/login`
   }
 
+  const handleLogout = () => {
+    if (player) player.disconnect()
+    setToken(null)
+    setUserProfile(null)
+    localStorage.removeItem('spotify_access_token')
+    window.location.href = '/'
+  }
+
   if (!token) {
     return <Login onLogin={handleLogin} />
   }
@@ -377,6 +389,7 @@ function App() {
           roomId={roomId}
           setRoomId={setRoomId}
           onJoin={joinRoom}
+          onLogout={handleLogout}
         />
       ) : (
         <div className="dashboard">

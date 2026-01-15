@@ -33,7 +33,7 @@ bump_backend() {
     local bump_type=$1
     local pyproject="backend/pyproject.toml"
 
-    echo -e "${BLUE}Bumping backend version (${bump_type})...${NC}"
+    echo -e "${BLUE}Bumping backend version (${bump_type})...${NC}" >&2
 
     # Get current version
     current_version=$(grep -E '^version = ' "$pyproject" | sed 's/version = "\(.*\)"/\1/')
@@ -56,7 +56,7 @@ bump_backend() {
             patch=0
             ;;
         *)
-            echo -e "${RED}Invalid bump type: $bump_type${NC}"
+            echo -e "${RED}Invalid bump type: $bump_type${NC}" >&2
             exit 1
             ;;
     esac
@@ -71,7 +71,7 @@ bump_backend() {
     sed -i.bak "s/__version__ = \".*\"/__version__ = \"${new_version}\"/" "backend/app/version.py"
     rm -f "backend/app/version.py.bak"
 
-    echo -e "${GREEN}✓ Backend: ${current_version} -> ${new_version}${NC}"
+    echo -e "${GREEN}✓ Backend: ${current_version} -> ${new_version}${NC}" >&2
     echo "$new_version"
 }
 
@@ -79,7 +79,7 @@ bump_backend() {
 bump_frontend() {
     local bump_type=$1
 
-    echo -e "${BLUE}Bumping frontend version (${bump_type})...${NC}"
+    echo -e "${BLUE}Bumping frontend version (${bump_type})...${NC}" >&2
 
     # Get current version before bump
     current_version=$(grep -E '"version":' frontend/package.json | sed 's/.*"version": "\(.*\)".*/\1/')
@@ -96,7 +96,7 @@ bump_frontend() {
     sed -i.bak "s/export const VERSION = '.*'/export const VERSION = '${new_version}'/" "frontend/src/version.js"
     rm -f "frontend/src/version.js.bak"
 
-    echo -e "${GREEN}✓ Frontend: ${current_version} -> ${new_version}${NC}"
+    echo -e "${GREEN}✓ Frontend: ${current_version} -> ${new_version}${NC}" >&2
     echo "$new_version"
 }
 

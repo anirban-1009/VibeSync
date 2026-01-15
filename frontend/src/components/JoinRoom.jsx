@@ -1,6 +1,6 @@
 import '../styles/JoinRoom.css'
 
-export default function JoinRoom({ roomId, setRoomId, onJoin }) {
+export default function JoinRoom({ roomId, setRoomId, onJoin, onLogout }) {
     return (
         <div className="card center-card">
             <img src="/favicon.png" alt="VibeSync Logo" style={{ width: '100px', margin: '0 auto 0rem', display: 'block' }} />
@@ -15,6 +15,9 @@ export default function JoinRoom({ roomId, setRoomId, onJoin }) {
                 />
                 <button onClick={onJoin}>Join</button>
             </div>
+            <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#666', cursor: 'pointer', textDecoration: 'underline' }} onClick={onLogout}>
+                Switch Spotify Account
+            </p>
         </div>
     )
 }

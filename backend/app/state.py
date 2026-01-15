@@ -1,15 +1,11 @@
+from typing import Dict
+
+from app.utils.models import RoomState
+
 # Global in-memory state
 # In a real app, use Redis or a DB
 
-rooms = {}
-# Structure:
-# rooms[room_id] = {
-#     "current_track": None,
-#     "queue": [],
-#     "history": [],
-#     "is_playing": False,
-#     "users": []
-# }
+rooms: Dict[str, RoomState] = {}
 
 # Map socket_id -> user info
 sid_map = {}
