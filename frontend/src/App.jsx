@@ -130,10 +130,13 @@ function App() {
 
       const params = new URLSearchParams(window.location.search)
       const urlRoom = params.get('room')
-      if (urlRoom && !joinedRoom) {
+      const targetRoom = urlRoom || joinedRoom
+
+      if (targetRoom) {
         const currentToken = token || localStorage.getItem('spotify_access_token');
-        socket.emit('join_room', { room_id: urlRoom, user_profile: userProfile, token: currentToken })
-        setJoinedRoom(urlRoom)
+        addLog(`Re-joining room: ${targetRoom}`)
+        socket.emit('join_room', { room_id: targetRoom, user_profile: userProfile, token: currentToken })
+        if (!joinedRoom) setJoinedRoom(targetRoom)
       }
     }
 
