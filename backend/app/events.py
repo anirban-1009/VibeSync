@@ -1,9 +1,14 @@
+import logging
 import uuid
 
 from app.models import RoomState, RoomUser, Track, UserVibeData
 from app.server import sio
 from app.services.spotify import fetch_user_top_items
 from app.state import rooms, sid_map
+
+# Configure logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 @sio.event
@@ -69,8 +74,15 @@ async def join_room(sid, data):
                     top_tracks=top_tracks,
                     # top_artists=top_artists
                 )
+                logger.info(
+                    f"User Vibe Fetched for {user.name}: {len(top_tracks)} tracks."
+                )
+                if top_tracks:
+                    logger.info(
+                        f"   -> Top Track: {top_tracks[0].get('name')} by {top_tracks[0]['artists'][0]['name']}"
+                    )
             except Exception as e:
-                print(f"Failed to fetch vibe profile for {user.id}: {e}")
+                logger.error(f"Failed to fetch vibe profile for {user.id}: {e}")
 
     else:
         sid_map[sid] = {"room_id": room_id, "user_id": "anonymous"}
