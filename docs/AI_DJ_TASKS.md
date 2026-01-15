@@ -2,17 +2,17 @@
 
 ## Phase 1: Foundation & Data Collection
 
-- [ ] **Task 1.1: Update Spotify Permissions**
+- [*] **Task 1.1: Update Spotify Permissions**
     -   **File**: `backend/app/auth.py`
     -   **Description**: Add `user-top-read` to the `SCOPE` string in the authorization URL.
     -   **Validation**: Verify that logging in presents the new permission request screen.
 
-- [ ] **Task 1.2: detailed User Profile Fetching**
+- [*] **Task 1.2: detailed User Profile Fetching**
     -   **File**: `backend/app/events.py` (or new `backend/app/services/spotify.py`)
     -   **Description**: Create a function to fetch a user's top tracks/artists upon `join_room`.
     -   **Note**: This should be done asynchronously to not block the socket connection.
 
-- [ ] **Task 1.3: Room State Expansion**
+- [*] **Task 1.3: Room State Expansion**
     -   **File**: `backend/app/state.py`
     -   **Description**: Update the room data structure to hold `vibe_profile` data (aggregated stats of users).
 
