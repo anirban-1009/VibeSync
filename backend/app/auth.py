@@ -16,7 +16,7 @@ sp_oauth = SpotifyOAuth(
     client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET,
     redirect_uri=REDIRECT_URI,
-    scope="streaming user-read-email user-read-private user-modify-playback-state",
+    scope="streaming user-read-email user-read-private user-modify-playback-state user-top-read",
 )
 
 
