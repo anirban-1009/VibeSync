@@ -49,6 +49,7 @@ graph TD
 
     RoomManager -- Queue Empty? --> QueueManager
     RoomManager -- New Vibe? --> VibeAggregator
+    RoomManager -- "Session History" --> Rec_Service
 
     VibeAggregator -- Current User Stats --> Rec_Service
     VibeAggregator -- User Text Input --> LLM_Service
@@ -95,7 +96,8 @@ sequenceDiagram
 
     Note over Backend (Events): ...Music Queue Runs Out...
 
-    Backend (Events)->>Spotify_Recs: get_recommendations(seeds, active_vibe)
+    Backend (Events)->>Backend (Events): Analyze History (Pacing/Repetition Check)
+    Backend (Events)->>Spotify_Recs: get_recommendations(seeds, history, active_vibe)
     activate Spotify_Recs
     Spotify_Recs-->>Backend (Events): Track: "Weightless" (Marconi Union)
     deactivate Spotify_Recs
