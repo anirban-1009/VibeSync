@@ -1,6 +1,7 @@
 import uuid
 
 from app.server import sio
+from app.services.spotify import fetch_user_top_items
 from app.state import rooms, sid_map
 
 
@@ -43,6 +44,8 @@ async def join_room(sid, data):
             "history": [],
             "is_playing": False,
             "users": [],
+            "vibe_profile": {"users_data": {}, "room_aggregate": {}},
+            "ai_mode_enabled": True,
         }
 
     # Store user info
@@ -60,6 +63,21 @@ async def join_room(sid, data):
         rooms[room_id]["users"] = existing
 
         sid_map[sid] = {"room_id": room_id, "user_id": user["id"]}
+
+        # Fetch Vibe Data (AI DJ)
+        token = data.get("token")
+        if token:
+            try:
+                top_tracks = await fetch_user_top_items(token, "tracks")
+                # top_artists = await fetch_user_top_items(token, "artists") # Optimize: fetch only tracks for now to save time/rate limits
+
+                rooms[room_id]["vibe_profile"]["users_data"][user["id"]] = {
+                    "top_tracks": top_tracks,
+                    # "top_artists": top_artists
+                }
+            except Exception as e:
+                print(f"Failed to fetch vibe profile for {user['id']}: {e}")
+
     else:
         sid_map[sid] = {"room_id": room_id, "user_id": "anonymous"}
 

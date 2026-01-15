@@ -131,7 +131,8 @@ function App() {
       const params = new URLSearchParams(window.location.search)
       const urlRoom = params.get('room')
       if (urlRoom && !joinedRoom) {
-        socket.emit('join_room', { room_id: urlRoom, user_profile: userProfile })
+        const currentToken = token || localStorage.getItem('spotify_access_token');
+        socket.emit('join_room', { room_id: urlRoom, user_profile: userProfile, token: currentToken })
         setJoinedRoom(urlRoom)
       }
     }
@@ -253,7 +254,7 @@ function App() {
 
   const joinRoom = () => {
     if (roomId.trim()) {
-      socket.emit('join_room', { room_id: roomId, user_profile: userProfile })
+      socket.emit('join_room', { room_id: roomId, user_profile: userProfile, token: token })
       setJoinedRoom(roomId)
     }
   }

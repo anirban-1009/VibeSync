@@ -3,3 +3,4 @@ uvicorn[standard]>=0.27.0
 python-socketio>=5.11.0
 python-dotenv>=1.0.0
 spotipy>=2.23.0
+httpx

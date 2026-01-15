@@ -8,7 +8,12 @@ rooms = {}
 #     "queue": [],
 #     "history": [],
 #     "is_playing": False,
-#     "users": []
+#     "users": [],
+#     "vibe_profile": {
+#         "users_data": {},  # { user_id: { top_tracks: [], top_artists: [] } }
+#         "room_aggregate": {}
+#     },
+#     "ai_mode_enabled": True
 # }
 
 # Map socket_id -> user info
