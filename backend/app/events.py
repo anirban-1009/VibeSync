@@ -1,22 +1,19 @@
 import uuid
 
-from app.models import RoomState, RoomUser, Track, UserVibeData
 from app.server import sio
-from app.services.logger import get_logger
 from app.services.spotify_client import SpotifyService
 from app.state import rooms, sid_map
-
-# Configure logger
-logger = get_logger(__name__)
-
-
-@sio.event
-async def connect(sid, environ):
-    pass
+from app.utils.logger import logger
+from app.utils.models import RoomState, RoomUser, Track, UserVibeData
 
 
 @sio.event
-async def disconnect(sid):
+async def connect(sid, environ) -> None:
+    logger.debug(f"Socket Connected: {sid}")
+
+
+@sio.event
+async def disconnect(sid) -> None:
     if sid in sid_map:
         user_info = sid_map[sid]
         room_id = user_info.get("room_id")
@@ -31,9 +28,10 @@ async def disconnect(sid):
 
 
 @sio.event
-async def join_room(sid, data):
+async def join_room(sid, data) -> None:
     room_id = data.get("room_id")
     user_profile = data.get("user_profile")
+    # music_service = SpotifyService() # Removed unused instance
 
     if not room_id:
         return
@@ -73,12 +71,12 @@ async def join_room(sid, data):
                     top_tracks=top_tracks,
                     # top_artists=top_artists
                 )
-                logger.info(
+                logger.debug(
                     f"User Vibe Fetched for {user.name}: {len(top_tracks)} tracks."
                 )
                 if top_tracks:
-                    logger.info(
-                        f"   -> Top Track: {top_tracks[0].get('name')} by {top_tracks[0]['artists'][0]['name']}"
+                    logger.debug(
+                        f"Top Track: {top_tracks[0].get('name')} by {top_tracks[0]['artists'][0]['name']}"
                     )
             except Exception as e:
                 logger.error(f"Failed to fetch vibe profile for {user.id}: {e}")
@@ -93,7 +91,7 @@ async def join_room(sid, data):
 
 
 @sio.event
-async def leave_session(sid, data):
+async def leave_session(sid, data) -> None:
     room_id = data.get("room_id")
     if room_id:
         sio.leave_room(sid, room_id)
@@ -104,12 +102,15 @@ async def leave_session(sid, data):
 
 
 @sio.event
-async def add_to_queue(sid, data):
+async def add_to_queue(sid, data) -> None:
     """
     Data: { room_id, track: { uri, name, artist, image, duration_ms } }
     """
     room_id = data.get("room_id")
     track_data = data.get("track")
+    logger.debug(
+        f"Request to add track: {track_data.get('name') if track_data else 'Unknown'}"
+    )
 
     session = sid_map.get(sid, {})
     user_id = session.get("user_id", "anonymous")
@@ -130,6 +131,7 @@ async def add_to_queue(sid, data):
         if room.current_track is None:
             room.current_track = new_track
             room.is_playing = True
+            logger.debug(f"Emitting play_track for {new_track.name} in room {room_id}")
             await sio.emit("play_track", new_track.model_dump(), room=room_id)
             await sio.emit("room_state", room.model_dump(), room=room_id)
         else:
@@ -137,10 +139,14 @@ async def add_to_queue(sid, data):
             await sio.emit(
                 "queue_updated", [t.model_dump() for t in room.queue], room=room_id
             )
+    else:
+        logger.warning(
+            f"Add to queue failed: Room {room_id} not found or invalid data."
+        )
 
 
 @sio.event
-async def toggle_playback(sid, data):
+async def toggle_playback(sid, data) -> None:
     room_id = data.get("room_id")
     if room_id in rooms:
         room = rooms[room_id]
@@ -153,7 +159,7 @@ async def toggle_playback(sid, data):
 
 
 @sio.event
-async def skip_song(sid, data):
+async def skip_song(sid, data) -> None:
     room_id = data.get("room_id")
     if room_id in rooms:
         room = rooms[room_id]
@@ -181,7 +187,7 @@ async def skip_song(sid, data):
 
 
 @sio.event
-async def remove_from_queue(sid, data):
+async def remove_from_queue(sid, data) -> None:
     room_id = data.get("room_id")
     track_uuid = data.get("track_uuid")
 

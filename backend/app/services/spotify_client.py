@@ -1,9 +1,7 @@
 from typing import Any, List, Optional
 
 import httpx
-from app.services.logger import get_logger
-
-logger = get_logger(__name__)
+from app.utils.logger import logger
 
 
 class SpotifyService:
@@ -33,6 +31,29 @@ class SpotifyService:
             except Exception as e:
                 logger.error(f"HTTP Request Failed: {e}")
                 return None
+
+    @classmethod
+    async def _put(cls, url: str, token: str, payload: Any = None) -> bool:
+        """
+        Internal helper for PUT requests (e.g. playback controls).
+        """
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.put(url, headers=headers, json=payload)
+                if response.status_code in (200, 204):
+                    return True
+                else:
+                    logger.error(
+                        f"Spotify API PUT Error [{response.status_code}]: {response.text}"
+                    )
+                    return False
+            except Exception as e:
+                logger.error(f"HTTP Request Failed: {e}")
+                return False
 
     @classmethod
     async def fetch_user_top_items(
