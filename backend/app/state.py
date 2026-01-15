@@ -1,6 +1,6 @@
 from typing import Dict
 
-from app.models import RoomState
+from app.utils.models import RoomState
 
 # Global in-memory state
 # In a real app, use Redis or a DB

@@ -15,10 +15,10 @@ class Logger:
         logger = logging.getLogger(name)
 
         if not logger.hasHandlers():
-            logger.setLevel(logging.INFO)
+            logger.setLevel(logging.DEBUG)
 
             handler = logging.StreamHandler(sys.stdout)
-            handler.setLevel(logging.INFO)
+            handler.setLevel(logging.DEBUG)
 
             formatter = logging.Formatter(
                 "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -33,3 +33,6 @@ class Logger:
 
 def get_logger(name: str) -> logging.Logger:
     return Logger.get_logger(name)
+
+
+logger = get_logger("vibe_sync")
