@@ -1,14 +1,13 @@
-import logging
 import uuid
 
 from app.models import RoomState, RoomUser, Track, UserVibeData
 from app.server import sio
-from app.services.spotify import fetch_user_top_items
+from app.services.logger import get_logger
+from app.services.spotify_client import SpotifyService
 from app.state import rooms, sid_map
 
 # Configure logger
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logger = get_logger(__name__)
 
 
 @sio.event
@@ -67,7 +66,7 @@ async def join_room(sid, data):
         token = data.get("token")
         if token:
             try:
-                top_tracks = await fetch_user_top_items(token, "tracks")
+                top_tracks = await SpotifyService.fetch_user_top_items(token, "tracks")
                 # top_artists = await fetch_user_top_items(token, "artists") # Optimize: fetch only tracks for now to save time/rate limits
 
                 room.vibe_profile.users_data[user.id] = UserVibeData(
