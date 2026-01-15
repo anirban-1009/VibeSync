@@ -6,6 +6,9 @@
     <strong>Real-time Collaborative Music Listening Platform</strong>
   </p>
   <p>
+    <a href="https://github.com/anirban-1009/VibeSync/actions/workflows/ci.yml">
+      <img src="https://github.com/anirban-1009/VibeSync/actions/workflows/ci.yml/badge.svg" alt="CI" />
+    </a>
     <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
     <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
     <img src="https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi" alt="FastAPI" />
