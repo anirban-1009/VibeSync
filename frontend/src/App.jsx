@@ -367,6 +367,14 @@ function App() {
     window.location.href = `${BACKEND_URL}/login`
   }
 
+  const handleLogout = () => {
+    if (player) player.disconnect()
+    setToken(null)
+    setUserProfile(null)
+    localStorage.removeItem('spotify_access_token')
+    window.location.href = '/'
+  }
+
   if (!token) {
     return <Login onLogin={handleLogin} />
   }
@@ -378,6 +386,7 @@ function App() {
           roomId={roomId}
           setRoomId={setRoomId}
           onJoin={joinRoom}
+          onLogout={handleLogout}
         />
       ) : (
         <div className="dashboard">
