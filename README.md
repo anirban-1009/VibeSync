@@ -15,6 +15,8 @@
     <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
     <img src="https://img.shields.io/badge/Socket.io-010101?style=for-the-badge&logo=socket.io&logoColor=white" alt="Socket.io" />
     <img src="https://img.shields.io/badge/Spotify-1ED760?style=for-the-badge&logo=spotify&logoColor=white" alt="Spotify" />
+    <br/>
+    <img src="backend/coverage.svg" alt="Coverage" />
   </p>
 </div>
 
@@ -98,9 +100,9 @@ For a detailed technical breakdown, please refer to the [Architecture Documentat
 
 ### Development Documentation
 
-- **[CI/CD Setup Guide](CI_CD_SETUP.md)** - GitHub Actions workflows, pre-commit hooks, and Dependabot configuration
+- **[CI/CD Setup Guide](docs/CI_CD_SETUP.md)** - GitHub Actions workflows, pre-commit hooks, and Dependabot configuration
 - **[Pre-commit Guide](.github/PRE_COMMIT_GUIDE.md)** - Detailed guide on setting up and using pre-commit hooks
-- **[Versioning Guide](VERSIONING.md)** - Semantic versioning strategy for frontend and backend
+- **[Versioning Guide](docs/VERSIONING.md)** - Semantic versioning strategy for frontend and backend
 - **[Scripts Documentation](scripts/README.md)** - Automated tooling and version bumping scripts
 - **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Common issues and solutions for Spotify playback
 
@@ -109,8 +111,8 @@ For a detailed technical breakdown, please refer to the [Architecture Documentat
 | Topic | Description |
 |-------|-------------|
 | [Architecture](docs/architecture.md) | Technical architecture and design decisions |
-| [CI/CD](CI_CD_SETUP.md) | Continuous integration and deployment setup |
-| [Versioning](VERSIONING.md) | How to manage and bump versions |
+| [CI/CD](docs/CI_CD_SETUP.md) | Continuous integration and deployment setup |
+| [Versioning](docs/VERSIONING.md) | How to manage and bump versions |
 | [Troubleshooting](TROUBLESHOOTING.md) | Fixing common Spotify issues |
 
 ## Contributing
@@ -138,14 +140,22 @@ For a detailed technical breakdown, please refer to the [Architecture Documentat
 
 ### Version Bumping
 
-Use the automated script to bump versions:
+ Use the automated script to bump versions:
 
-```bash
-# Bump frontend patch version
-./scripts/bump-version.sh frontend patch
+ ```bash
+ # Bump frontend patch version
+ ./scripts/bump-version.sh frontend patch
 
-# Bump backend minor version
-./scripts/bump-version.sh backend minor
-```
+ # Bump backend minor version
+ ./scripts/bump-version.sh backend minor
+ ```
+
+ ### Coverage Badge
+
+ To update the test coverage badge (`docs/coverage.svg`), run:
+
+ ```bash
+ ./scripts/generate_coverage_badge.sh
+ ```
 
 See [scripts/README.md](scripts/README.md) for more details.
