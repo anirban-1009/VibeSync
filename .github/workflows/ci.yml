@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend:
-    name: Backend - Lint & Format
+    name: Backend - Lint, Format & Test
     runs-on: ubuntu-latest
     if: contains(github.event.head_commit.modified, 'backend/') || github.event_name == 'pull_request'
 
@@ -40,6 +40,9 @@ jobs:
 
       - name: Run Ruff formatter check
         run: uv run ruff format --check .
+
+      - name: Run Tests
+        run: uv run pytest tests
 
   frontend:
     name: Frontend - Build
