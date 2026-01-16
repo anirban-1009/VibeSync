@@ -18,7 +18,7 @@
 
 ## Phase 2: Logic & Recommendation Engine
 
-- [ ] **Task 2.1: Recommendation Service**
+- [*] **Task 2.1: Recommendation Service**
     -   **File**: `backend/app/services/recommendations.py` (New File)
     -   **Description**: Implement a function `get_recommendations(token, seeds, history, targets)` that calls the Spotify API.
     -   **Logic**:
@@ -26,12 +26,12 @@
         -   If variance is low (monotonous), slightly shift the target parameters for the next track.
     -   **Requirements**: Handle token refresh or use a valid user token from the room.
 
-- [ ] **Task 2.2: Aggregation Logic**
+- [*] **Task 2.2: Aggregation Logic**
     -   **File**: `backend/app/logic/vibe.py` (New File)
     -   **Description**: Logic to calculate the "average" vibe of the room based on the users present.
     -   **Output**: A dictionary of target audio features (e.g., `energy: 0.7`).
 
-- [ ] **Task 2.3: Mood Parser (LLM)**
+- [*] **Task 2.3: Mood Parser (LLM)**
     -   **File**: `backend/app/logic/mood_parser.py`
     -   **Description**: A function that takes a string input and returns Spotify Recommendation parameters.
     -   **Example**: Input "Study mode" -> `{"target_energy": 0.3, "target_instrumentalness": 0.8}`.

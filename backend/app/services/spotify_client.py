@@ -65,3 +65,23 @@ class SpotifyService:
         url = f"{cls.BASE_URL}/me/top/{type}?limit={limit}"
         data = await cls._get(url, token)
         return data.get("items", []) if data else []
+
+    @classmethod
+    async def get_request(cls, url: str, token: str) -> Optional[Any]:
+        """
+        Public wrapper for GET requests.
+        """
+        return await cls._get(url, token)
+
+    @classmethod
+    async def get_audio_features(cls, token: str, track_ids: List[str]) -> List[dict]:
+        """
+        Fetch audio features for a list of track IDs.
+        """
+        if not track_ids:
+            return []
+
+        ids_param = ",".join(track_ids)
+        url = f"{cls.BASE_URL}/audio-features?ids={ids_param}"
+        data = await cls._get(url, token)
+        return data.get("audio_features", []) if data else []

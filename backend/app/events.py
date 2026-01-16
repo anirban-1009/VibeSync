@@ -31,7 +31,7 @@ async def disconnect(sid) -> None:
 async def join_room(sid, data) -> None:
     room_id = data.get("room_id")
     user_profile = data.get("user_profile")
-    # music_service = SpotifyService() # Removed unused instance
+    music_service = SpotifyService()
 
     if not room_id:
         return
@@ -64,12 +64,24 @@ async def join_room(sid, data) -> None:
         token = data.get("token")
         if token:
             try:
-                top_tracks = await SpotifyService.fetch_user_top_items(token, "tracks")
-                # top_artists = await fetch_user_top_items(token, "artists") # Optimize: fetch only tracks for now to save time/rate limits
+                top_tracks = await music_service.fetch_user_top_items(token, "tracks")
+
+                # Fetch audio features for these tracks
+                if top_tracks:
+                    track_ids = [t["id"] for t in top_tracks if t.get("id")]
+                    features = await music_service.get_audio_features(token, track_ids)
+
+                    # Create a map for easy lookup
+                    f_map = {f["id"]: f for f in features if f and f.get("id")}
+
+                    # Attach features to tracks
+                    for track_obj in top_tracks:
+                        tid = track_obj.get("id")
+                        if tid and tid in f_map:
+                            track_obj["audio_features"] = f_map[tid]
 
                 room.vibe_profile.users_data[user.id] = UserVibeData(
                     top_tracks=top_tracks,
-                    # top_artists=top_artists
                 )
                 logger.debug(
                     f"User Vibe Fetched for {user.name}: {len(top_tracks)} tracks."
