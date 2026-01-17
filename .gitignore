@@ -13,3 +13,4 @@ coverage/
 .env
 node_modules/
 backend/.cache
+backend/.coverage

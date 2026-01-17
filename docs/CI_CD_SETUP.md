@@ -27,6 +27,11 @@ Pre-commit is active and will run on every `git commit`:
 - Large file detection
 - Merge conflict detection
 
+### 4. Automation Scripts
+Located in `scripts/`:
+
+- `generate_coverage_badge.sh`: Runs backend tests and generates the SVG coverage badge (`backend/coverage.svg`).
+
 ## How to Use
 
 ### Making a Commit
