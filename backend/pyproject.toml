@@ -9,6 +9,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "spotipy>=2.23.0",
     "httpx>=0.28.1",
+    "edge-tts>=7.2.7",
 ]
 
 [project.optional-dependencies]

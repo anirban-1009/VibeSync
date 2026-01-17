@@ -1,12 +1,19 @@
+import os
+
 import socketio
-from app.auth import router as auth_router
+from app.routers.auth import router as auth_router
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
 app = FastAPI()
+
+# Ensure static directory exists
+os.makedirs("static/voices", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.add_middleware(
     CORSMiddleware,
