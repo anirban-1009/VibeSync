@@ -22,33 +22,33 @@
     -   **File**: `backend/app/services/recommendations.py` (New File)
     -   **Description**: Implement a function `get_recommendations(token, seeds, history, targets)` that calls the Spotify API.
     -   **Logic**:
-        -   Calculate standard deviation of energy/tempo in `history` (last 5 tracks).
-        -   If variance is low (monotonous), slightly shift the target parameters for the next track.
+        -   Use `seed_tracks` from `history` and `seed_genres` from `vibe_profile`.
+        -   *Note*: Audio features (energy, tempo) are deprecated. We rely on Spotify's internal similarity algorithm via seeds.
     -   **Requirements**: Handle token refresh or use a valid user token from the room.
 
 - [*] **Task 2.2: Aggregation Logic**
     -   **File**: `backend/app/logic/vibe.py` (New File)
-    -   **Description**: Logic to calculate the "average" vibe of the room based on the users present.
-    -   **Output**: A dictionary of target audio features (e.g., `energy: 0.7`).
+    -   **Description**: Logic to aggregate user preferences into a room profile.
+    -   **Output**: A list of most frequent `genres` and `artists` in the room.
 
 - [*] **Task 2.3: Mood Parser (LLM)**
     -   **File**: `backend/app/logic/mood_parser.py`
-    -   **Description**: A function that takes a string input and returns Spotify Recommendation parameters.
-    -   **Example**: Input "Study mode" -> `{"target_energy": 0.3, "target_instrumentalness": 0.8}`.
+    -   **Description**: A function that takes a string input and returns Spotify Recommendation seeds (genres/artists).
+    -   **Example**: Input "Study mode" -> `{"seed_genres": ["classical", "ambient"]}`.
 
 ## Phase 3: Personality & Voice (LLM Integration)
 
-- [ ] **Task 3.1: LLM Client Setup**
+- [*] **Task 3.1: LLM Client Setup**
     -   **File**: `backend/app/services/llm.py` (New File)
     -   **Description**: Create a wrapper for the LLM provider. Support `OPENAI_API_KEY` or a local URL for `Ollama`.
     -   **Output**: A function `generate_dj_script(context: dict) -> str`.
 
-- [ ] **Task 3.2: Persona Prompting**
+- [*] **Task 3.2: Persona Prompting**
     -   **File**: `backend/app/prompts/dj_persona.py`
     -   **Description**: Design the System Prompt. "You are DJ HAL. Be charismatic, brief, and mention users by name."
     -   **Testing**: Verify the LLM outputs short, punchy intros without hallucinating fake song data.
 
-- [ ] **Task 3.3: TTS Service**
+- [*] **Task 3.3: TTS Service**
     -   **File**: `backend/app/services/voice.py`
     -   **Description**: Implement a function that takes the text string and returns an Audio Buffer / URL.
     -   **Note**: Use a temp directory or in-memory stream to serve this to the client.

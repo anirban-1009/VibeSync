@@ -4,7 +4,7 @@ from app.server import sio
 from app.services.spotify_client import SpotifyService
 from app.state import rooms, sid_map
 from app.utils.logger import logger
-from app.utils.models import RoomState, RoomUser, Track, UserVibeData
+from app.utils.models import RoomState, RoomUser, Track, UserVibeData, VibeTrack
 
 
 @sio.event
@@ -60,36 +60,63 @@ async def join_room(sid, data) -> None:
 
         sid_map[sid] = {"room_id": room_id, "user_id": user.id}
 
-        # Fetch Vibe Data (AI DJ)
         token = data.get("token")
         if token:
             try:
-                top_tracks = await music_service.fetch_user_top_items(token, "tracks")
+                raw_tracks = await music_service.fetch_user_top_items(
+                    token, "tracks", limit=20, time_range="short_term"
+                )
 
-                # Fetch audio features for these tracks
-                if top_tracks:
-                    track_ids = [t["id"] for t in top_tracks if t.get("id")]
-                    features = await music_service.get_audio_features(token, track_ids)
+                if not raw_tracks or len(raw_tracks) < 5:
+                    logger.debug(
+                        f"User {user.name} has few short-term tracks ({len(raw_tracks)}), fetching medium-term."
+                    )
+                    try:
+                        medium_tracks = await music_service.fetch_user_top_items(
+                            token, "tracks", limit=20, time_range="medium_term"
+                        )
+                        existing_ids = {t["id"] for t in raw_tracks if "id" in t}
+                        for t in medium_tracks:
+                            if t.get("id") and t["id"] not in existing_ids:
+                                raw_tracks.append(t)
+                                existing_ids.add(t["id"])
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to fetch medium-term fallback for {user.name}: {e}"
+                        )
 
-                    # Create a map for easy lookup
-                    f_map = {f["id"]: f for f in features if f and f.get("id")}
+                refined_tracks = []
 
-                    # Attach features to tracks
-                    for track_obj in top_tracks:
-                        tid = track_obj.get("id")
-                        if tid and tid in f_map:
-                            track_obj["audio_features"] = f_map[tid]
+                if raw_tracks:
+                    for t in raw_tracks:
+                        artist_name = "Unknown"
+                        if t.get("artists") and len(t["artists"]) > 0:
+                            artist_name = t["artists"][0].get("name", "Unknown")
+
+                        refined_tracks.append(
+                            VibeTrack(
+                                id=t.get("id"),
+                                name=t.get("name"),
+                                artist=artist_name,
+                                uri=t.get("uri"),
+                                popularity=t.get("popularity"),
+                                explicit=t.get("explicit"),
+                                album=t.get("album", {}).get("name"),
+                            )
+                        )
 
                 room.vibe_profile.users_data[user.id] = UserVibeData(
-                    top_tracks=top_tracks,
+                    top_tracks=refined_tracks,
                 )
+
                 logger.debug(
-                    f"User Vibe Fetched for {user.name}: {len(top_tracks)} tracks."
+                    f"User Vibe Fetched for {user.name}: {len(refined_tracks)} tracks saved."
                 )
-                if top_tracks:
+                if refined_tracks:
                     logger.debug(
-                        f"Top Track: {top_tracks[0].get('name')} by {top_tracks[0]['artists'][0]['name']}"
+                        f"Top Vibe Track: {refined_tracks[0].name} by {refined_tracks[0].artist}"
                     )
+
             except Exception as e:
                 logger.error(f"Failed to fetch vibe profile for {user.id}: {e}")
 
