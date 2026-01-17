@@ -114,20 +114,47 @@ async def test_get_audio_features_chunking():
     token = "token"
     ids = ["1", "2"]
 
-    mock_data = {"audio_features": [{"id": "1"}, {"id": "2"}]}
+    mock_json = {"audio_features": [{"id": "1"}, {"id": "2"}]}
 
-    with patch(
-        "app.services.spotify_client.SpotifyService._get", new_callable=AsyncMock
-    ) as mock_get:
-        mock_get.return_value = mock_data
+    # Mock Response
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = mock_json
+
+    with patch("httpx.AsyncClient") as mock_client_cls:
+        mock_client = AsyncMock()
+        mock_client.get.return_value = mock_response
+        mock_client_cls.return_value.__aenter__.return_value = mock_client
 
         features = await SpotifyService.get_audio_features(token, ids)
 
         assert len(features) == 2
-
-        args, _ = mock_get.call_args
+        mock_client.get.assert_called_once()
+        args, _ = mock_client.get.call_args
         url = args[0]
         assert "ids=1,2" in url
+
+
+@pytest.mark.asyncio
+async def test_get_audio_features_403_graceful():
+    token = "token"
+    ids = ["1", "2"]
+
+    # Mock 403 Response
+    mock_response = MagicMock()
+    mock_response.status_code = 403
+    mock_response.text = "Forbidden"
+
+    with patch("httpx.AsyncClient") as mock_client_cls:
+        mock_client = AsyncMock()
+        mock_client.get.return_value = mock_response
+        mock_client_cls.return_value.__aenter__.return_value = mock_client
+
+        features = await SpotifyService.get_audio_features(token, ids)
+
+        # Should be empty list, not crash
+        assert features == []
+        mock_client.get.assert_called_once()
 
 
 @pytest.mark.asyncio

@@ -1,67 +1,41 @@
-from app.logic.vibe import calculate_room_vibe, get_vibe_seeds
-from app.utils.models import UserVibeData
-
-
-def test_calculate_room_vibe():
-    # Mock data
-    # User 1: High energy
-    user1_data = UserVibeData(
-        top_tracks=[
-            {
-                "id": "1",
-                "audio_features": {
-                    "energy": 0.8,
-                    "valence": 0.8,
-                    "danceability": 0.8,
-                    "tempo": 120,
-                },
-            }
-        ]
-    )
-    # User 2: Low energy
-    user2_data = UserVibeData(
-        top_tracks=[
-            {
-                "id": "2",
-                "audio_features": {
-                    "energy": 0.2,
-                    "valence": 0.2,
-                    "danceability": 0.2,
-                    "tempo": 80,
-                },
-            }
-        ]
-    )
-
-    users_data = {"u1": user1_data, "u2": user2_data}
-
-    vibe = calculate_room_vibe(users_data)
-
-    assert vibe["target_energy"] == 0.5
-    assert vibe["target_tempo"] == 100.0
-
-
-def test_calculate_room_vibe_empty():
-    vibe = calculate_room_vibe({})
-    assert vibe["target_energy"] == 0.6
-    assert vibe["target_danceability"] == 0.5
-
-
-def test_calculate_room_vibe_partial_data():
-    # User with tracks but missing features
-    user1_data = UserVibeData(top_tracks=[{"id": "1", "audio_features": None}])
-    vibe = calculate_room_vibe({"u1": user1_data})
-    # Should revert to default because no valid features found
-    assert vibe["target_energy"] == 0.6
+from app.logic.vibe import get_vibe_seeds
+from app.utils.models import UserVibeData, VibeTrack
 
 
 def test_get_vibe_seeds():
-    user1_data = UserVibeData(top_tracks=[{"id": "track1"}])
-    user2_data = UserVibeData(top_tracks=[{"id": "track2"}])
+    # Setup users with partial data
+    user1_data = UserVibeData(
+        top_tracks=[
+            VibeTrack(id="t1", name="S1", artist="A1", uri="u1"),
+            VibeTrack(id="t2", name="S2", artist="A1", uri="u2"),
+        ]
+    )
+    user2_data = UserVibeData(
+        top_tracks=[
+            VibeTrack(id="t1", name="S1", artist="A1", uri="u1"),  # Duplicate ID
+            VibeTrack(id="t3", name="S3", artist="A2", uri="u3"),
+        ]
+    )
 
     users_data = {"u1": user1_data, "u2": user2_data}
 
     seeds = get_vibe_seeds(users_data)
-    assert len(seeds["seed_tracks"]) == 2
-    assert "track1" in seeds["seed_tracks"]
-    assert "track2" in seeds["seed_tracks"]
+    seed_tracks = seeds["seed_tracks"]
+
+    # Should have unique IDs: t1, t2, t3
+    assert len(seed_tracks) <= 5
+    assert len(seed_tracks) == 3
+    assert "t1" in seed_tracks
+    assert "t2" in seed_tracks
+    assert "t3" in seed_tracks
+
+
+def test_get_vibe_seeds_limit():
+    """Ensure max 5 seeds."""
+    tracks = [
+        VibeTrack(id=f"t{i}", name=f"S{i}", artist="A", uri=f"u{i}") for i in range(10)
+    ]
+    user_data = UserVibeData(top_tracks=tracks)
+
+    seeds = get_vibe_seeds({"u1": user_data})
+    assert len(seeds["seed_tracks"]) == 5

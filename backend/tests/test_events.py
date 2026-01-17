@@ -49,14 +49,11 @@ async def test_add_to_queue(mock_rooms, mock_sid_map, mock_sio):
 
 
 @patch("app.events.SpotifyService.fetch_user_top_items")
-@patch("app.events.SpotifyService.get_audio_features")
 @patch("app.events.sio", new_callable=AsyncMock)
 @patch("app.events.sid_map", new_callable=dict)
 @patch("app.events.rooms", new_callable=dict)
 @pytest.mark.asyncio
-async def test_join_room_new(
-    mock_rooms, mock_sid_map, mock_sio, mock_get_features, mock_fetch_top
-):
+async def test_join_room_new(mock_rooms, mock_sid_map, mock_sio, mock_fetch_top):
     # Setup
     sid = "test_sid"
     room_id = "new_room"
@@ -71,9 +68,13 @@ async def test_join_room_new(
 
     # Mock responses
     mock_fetch_top.return_value = [
-        {"id": "t1", "name": "Track 1", "artists": [{"name": "A1"}]}
+        {
+            "id": "t1",
+            "name": "Track 1",
+            "artists": [{"name": "A1"}],
+            "uri": "spotify:track:t1",
+        }
     ]
-    mock_get_features.return_value = [{"id": "t1", "energy": 0.8}]
 
     await join_room(sid, data)
 
@@ -85,7 +86,12 @@ async def test_join_room_new(
     # Verify vibe integration
     user_vibe = room.vibe_profile.users_data["u1"]
     assert len(user_vibe.top_tracks) == 1
-    assert user_vibe.top_tracks[0]["audio_features"]["energy"] == 0.8
+
+    # Check VibeTrack conversion
+    track = user_vibe.top_tracks[0]
+    assert track.id == "t1"
+    assert track.name == "Track 1"
+    assert track.artist == "A1"
 
     mock_sio.enter_room.assert_called_with(sid, room_id)
 
