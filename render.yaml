@@ -4,15 +4,12 @@ services:
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.server:socket_app --host 0.0.0.0 --port $PORT
-    root: backend
+    rootDir: backend
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.5
       - key: BACKEND_URL
-        fromService:
-            type: web
-            name: vibesync-backend
-            property: url
+        sync: false
       - key: FRONTEND_URL
         sync: false
       - key: CLIENT_ID
