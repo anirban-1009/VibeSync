@@ -2,6 +2,7 @@ import os
 
 import socketio
 from app.routers.auth import router as auth_router
+from app.version import __version__
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
-app = FastAPI()
+app = FastAPI(version=__version__)
 
 # Ensure static directory exists
 os.makedirs("static/voices", exist_ok=True)
