@@ -304,7 +304,7 @@ function App() {
 
   const copyLink = () => {
     const origin = window.location.origin;
-    const url = `${origin}/?room=${joinedRoom}&token=${token}`;
+    const url = `${origin}/?room=${joinedRoom}`;
 
     const copyToClipboard = (text) => {
       if (navigator.clipboard && window.isSecureContext) {
