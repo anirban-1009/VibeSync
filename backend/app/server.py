@@ -3,9 +3,10 @@ import os
 import socketio
 from app.core.config import Settings
 from app.routers.auth import router as auth_router
+from app.utils.logger import logger
 from app.version import __version__
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -16,6 +17,19 @@ app = FastAPI(version=__version__)
 # Ensure static directory exists
 os.makedirs("static/voices", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+# logger is now the shared instance
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url.path}")
+    response = await call_next(request)
+    logger.info(
+        f"Request handled: {request.method} {request.url.path} - Status: {response.status_code}"
+    )
+    return response
 
 
 settings = Settings.get_settings()
