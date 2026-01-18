@@ -33,7 +33,7 @@ def safe_context():
 async def test_get_llm_client_gemini(mock_settings):
     """Test factory returns GeminiClient when configured."""
     mock_settings.gemini_api_key = "test_gemini"
-    mock_settings.gemini_model = "gemini-1.5-flash"
+    mock_settings.gemini_model = "gemini-2.5-flash"
     mock_settings.openai_api_key = None
 
     with patch("app.services.llm.genai.Client") as mock_client_cls:
@@ -41,7 +41,7 @@ async def test_get_llm_client_gemini(mock_settings):
         assert isinstance(client, GeminiClient)
         # Verify Client initialized
         mock_client_cls.assert_called_with(api_key="test_gemini")
-        assert client.model == "gemini-1.5-flash"
+        assert client.model == "gemini-2.5-flash"
 
 
 @pytest.mark.asyncio
@@ -110,7 +110,7 @@ async def test_gemini_generate():
     """Test Gemini client generation success."""
     with patch("app.services.llm.genai.Client") as _MockClient:
         # Create client instance
-        client = GeminiClient(api_key="test_key", model="gemini-1.5-flash")
+        client = GeminiClient(api_key="test_key", model="gemini-2.5-flash")
 
         # Setup mock response
         mock_response = MagicMock()
@@ -127,7 +127,7 @@ async def test_gemini_generate():
         assert result == "Gemini Response"
         client.client.aio.models.generate_content.assert_called_once()
         kwargs = client.client.aio.models.generate_content.call_args.kwargs
-        assert kwargs["model"] == "gemini-1.5-flash"
+        assert kwargs["model"] == "gemini-2.5-flash"
         assert "Sys" in kwargs["contents"]
         assert "User" in kwargs["contents"]
 

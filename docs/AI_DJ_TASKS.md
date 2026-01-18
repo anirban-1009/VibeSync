@@ -69,6 +69,13 @@
     -   **Description**: A text input / chat bubble where users can say "I'm feeling X".
     -   **Event**: Emits `set_vibe` socket event.
 
+- [ ] **Task 4.4: Enhanced Sharing**
+    -   **File**: `frontend/src/components/ShareModal.jsx` (New Component)
+    -   **Description**: Improve the sharing experience.
+        -   **QR Code**: Display a QR code for easy mobile joining.
+        -   **Native Share**: Use `navigator.share` API for mobile native sharing menus.
+        -   **Visual Feedback**: Better toaster/notification on copy.
+
 ## Phase 5: Polish
 
 - [ ] **Task 5.1: Frontend Indicator**
@@ -78,3 +85,8 @@
 - [ ] **Task 4.2: Empty State Handling**
     -   **File**: `backend/app/events.py`
     -   **Description**: specific logic for when the room is empty vs just 1 user.
+
+- [ ] **Task 5.3: Loop / Repeat Mode**
+    -   **File**: `frontend/src/components/Player.jsx` & `backend/app/services/spotify_client.py`
+    -   **Description**: Add ability to loop current track or queue.
+    -   **API**: Implement `put_repeat_mode` (off/track/context) via Spotify API.

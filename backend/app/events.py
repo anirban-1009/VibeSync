@@ -210,6 +210,13 @@ async def add_to_queue(sid, data) -> None:
             added_by=user_id,
         )
 
+        # Populate user info if available
+        if user_id != "anonymous":
+            found_user = next((u for u in room.users if u.id == user_id), None)
+            if found_user:
+                new_track.added_by_name = found_user.name
+                new_track.added_by_image = found_user.image
+
         if room.current_track is None:
             room.current_track = new_track
             room.is_playing = True

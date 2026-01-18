@@ -17,6 +17,8 @@ class Track(BaseModel):
     duration_ms: int
     uuid: Optional[str] = None
     added_by: Optional[str] = "system"
+    added_by_name: Optional[str] = "System"
+    added_by_image: Optional[str] = None
 
 
 class VibeTrack(BaseModel):
