@@ -9,10 +9,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.5
       - key: BACKEND_URL
-        fromService:
-            type: web
-            name: vibesync-backend
-            property: url
+        sync: false
       - key: FRONTEND_URL
         sync: false
       - key: CLIENT_ID

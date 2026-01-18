@@ -12,7 +12,11 @@ class Settings:
         self.client_secret = os.getenv("CLIENT_SECRET")
         self.redirect_uri = os.getenv("REDIRECT_URI")
         self.frontend_url = os.getenv("FRONTEND_URL")
-        self.backend_url = os.getenv("BACKEND_URL", "http://localhost:8000")
+        self.backend_url = (
+            os.getenv("BACKEND_URL")
+            or os.getenv("RENDER_EXTERNAL_URL")
+            or "http://localhost:8000"
+        )
 
         # LLM Settings
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
