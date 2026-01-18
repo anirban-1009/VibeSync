@@ -33,13 +33,15 @@ def safe_context():
 async def test_get_llm_client_gemini(mock_settings):
     """Test factory returns GeminiClient when configured."""
     mock_settings.gemini_api_key = "test_gemini"
-    mock_settings.gemini_model = "gemini-pro"
+    mock_settings.gemini_model = "gemini-1.5-flash"
     mock_settings.openai_api_key = None
 
-    client = get_llm_client()
-    assert isinstance(client, GeminiClient)
-    assert client.api_key == "test_gemini"
-    assert client.model == "gemini-pro"
+    with patch("app.services.llm.genai.Client") as mock_client_cls:
+        client = get_llm_client()
+        assert isinstance(client, GeminiClient)
+        # Verify Client initialized
+        mock_client_cls.assert_called_with(api_key="test_gemini")
+        assert client.model == "gemini-1.5-flash"
 
 
 @pytest.mark.asyncio
@@ -106,33 +108,38 @@ async def test_openai_generate_failure():
 @pytest.mark.asyncio
 async def test_gemini_generate():
     """Test Gemini client generation success."""
-    client = GeminiClient(api_key="test_key", model="gemini-pro")
+    with patch("app.services.llm.genai.Client") as _MockClient:
+        # Create client instance
+        client = GeminiClient(api_key="test_key", model="gemini-1.5-flash")
 
-    response_mock = MagicMock()
-    response_mock.json.return_value = {
-        "candidates": [{"content": {"parts": [{"text": "Gemini Response"}]}}]
-    }
-    response_mock.raise_for_status = MagicMock()
+        # Setup mock response
+        mock_response = MagicMock()
+        mock_response.text = "Gemini Response"
 
-    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
-        mock_post.return_value = response_mock
+        # Setup async return value for generate_content
+        # Note: standard AsyncMock for the method itself
+        client.client.aio.models.generate_content = AsyncMock(
+            return_value=mock_response
+        )
 
         result = await client.generate("Sys", "User")
 
         assert result == "Gemini Response"
-        mock_post.assert_called_once()
-        args, kwargs = mock_post.call_args
-        assert kwargs["params"]["key"] == "test_key"
-        # Check that URL contains the model
-        assert "v1beta/models/gemini-pro:generateContent" in client.url
+        client.client.aio.models.generate_content.assert_called_once()
+        kwargs = client.client.aio.models.generate_content.call_args.kwargs
+        assert kwargs["model"] == "gemini-1.5-flash"
+        assert "Sys" in kwargs["contents"]
+        assert "User" in kwargs["contents"]
 
 
 @pytest.mark.asyncio
 async def test_gemini_generate_failure():
     """Test Gemini client generation failure."""
-    client = GeminiClient(api_key="test_key")
-    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
-        mock_post.side_effect = Exception("API fail")
+    with patch("app.services.llm.genai.Client") as _MockClient:
+        client = GeminiClient(api_key="test_key")
+        client.client.aio.models.generate_content = AsyncMock(
+            side_effect=Exception("API fail")
+        )
 
         with pytest.raises(LLMGenerationError):
             await client.generate("Sys", "User")
