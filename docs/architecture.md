@@ -111,7 +111,7 @@ graph TD
 
 ## AI DJ Data Flow
 1.  **Input**: User types "I'm sad" -> Frontend emits `set_vibe`.
-2.  **Parsing**: `events.py` calls `llm.parse_mood("I'm sad")` -> Returns `{"target_valence": 0.2}`.
+2.  **Parsing**: `events.py` calls `llm.parse_mood("I'm sad")` -> Returns `{"seed_genres": ["sad", "rainy-day"]}`.
 3.  **State Update**: Stored in `rooms[room_id]["active_vibe"]`.
 4.  **Auto-Queue**:
     *   Queue runs empty.

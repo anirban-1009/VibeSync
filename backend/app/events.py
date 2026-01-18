@@ -1,10 +1,60 @@
 import uuid
 
 from app.server import sio
+from app.services.llm import generate_dj_script
 from app.services.spotify_client import SpotifyService
 from app.state import rooms, sid_map
 from app.utils.logger import logger
-from app.utils.models import RoomState, RoomUser, Track, UserVibeData
+from app.utils.models import RoomState, RoomUser, Track, UserVibeData, VibeTrack
+
+
+async def trigger_dj_voice(room_id: str, current_track: Track) -> None:
+    """Helper to generate and emit DJ commentary."""
+    room = rooms.get(room_id)
+    if not room or not room.ai_mode_enabled:
+        return
+
+    try:
+        next_song = room.queue[0] if room.queue else None
+
+        added_by_name = "someone"
+        if current_track.added_by and current_track.added_by not in (
+            "system",
+            "anonymous",
+        ):
+            for u in room.users:
+                if u.id == current_track.added_by:
+                    added_by_name = u.name
+                    break
+
+        context = {
+            "current_song_name": current_track.name,
+            "current_song_artist": current_track.artist,
+            "next_song_name": next_song.name if next_song else "nothing queued",
+            "next_song_artist": next_song.artist if next_song else "unknown",
+            "added_by_user": added_by_name,
+            "vibe_description": "keeping it fresh",
+        }
+
+        script = await generate_dj_script(context)
+
+        audio_url = None
+        if script:
+            try:
+                from app.services.voice import generate_voice_clip
+
+                audio_url = await generate_voice_clip(script)
+            except Exception as e:
+                logger.error(f"TTS generation failed: {e}")
+
+        if script:
+            await sio.emit(
+                "dj_commentary", {"text": script, "audio_url": audio_url}, room=room_id
+            )
+            logger.info(f"DJ Commentary emitted for room {room_id}")
+
+    except Exception as e:
+        logger.error(f"Failed to generate DJ commentary: {e}")
 
 
 @sio.event
@@ -38,14 +88,12 @@ async def join_room(sid, data) -> None:
 
     await sio.enter_room(sid, room_id)
 
-    # Init room if not exists
     if room_id not in rooms:
         rooms[room_id] = RoomState()
 
     room = rooms[room_id]
 
-    # Store user info
-    if user_profile:
+    if user_profile and user_profile.get("id"):
         user = RoomUser(
             id=user_profile.get("id"),
             name=user_profile.get("display_name"),
@@ -53,52 +101,76 @@ async def join_room(sid, data) -> None:
             if user_profile.get("images")
             else None,
         )
-        # Avoid duplicates
         existing = [u for u in room.users if u.id != user.id]
         existing.append(user)
         room.users = existing
 
         sid_map[sid] = {"room_id": room_id, "user_id": user.id}
 
-        # Fetch Vibe Data (AI DJ)
         token = data.get("token")
         if token:
             try:
-                top_tracks = await music_service.fetch_user_top_items(token, "tracks")
+                raw_tracks = await music_service.fetch_user_top_items(
+                    token, "tracks", limit=20, time_range="short_term"
+                )
 
-                # Fetch audio features for these tracks
-                if top_tracks:
-                    track_ids = [t["id"] for t in top_tracks if t.get("id")]
-                    features = await music_service.get_audio_features(token, track_ids)
+                if not raw_tracks or len(raw_tracks) < 5:
+                    logger.debug(
+                        f"User {user.name} has few short-term tracks ({len(raw_tracks)}), fetching medium-term."
+                    )
+                    try:
+                        medium_tracks = await music_service.fetch_user_top_items(
+                            token, "tracks", limit=20, time_range="medium_term"
+                        )
+                        existing_ids = {t["id"] for t in raw_tracks if "id" in t}
+                        for t in medium_tracks:
+                            if t.get("id") and t["id"] not in existing_ids:
+                                raw_tracks.append(t)
+                                existing_ids.add(t["id"])
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to fetch medium-term fallback for {user.name}: {e}"
+                        )
 
-                    # Create a map for easy lookup
-                    f_map = {f["id"]: f for f in features if f and f.get("id")}
+                refined_tracks = []
 
-                    # Attach features to tracks
-                    for track_obj in top_tracks:
-                        tid = track_obj.get("id")
-                        if tid and tid in f_map:
-                            track_obj["audio_features"] = f_map[tid]
+                if raw_tracks:
+                    for t in raw_tracks:
+                        artist_name = "Unknown"
+                        if t.get("artists") and len(t["artists"]) > 0:
+                            artist_name = t["artists"][0].get("name", "Unknown")
+
+                        refined_tracks.append(
+                            VibeTrack(
+                                id=t.get("id"),
+                                name=t.get("name"),
+                                artist=artist_name,
+                                uri=t.get("uri"),
+                                popularity=t.get("popularity"),
+                                explicit=t.get("explicit"),
+                                album=t.get("album", {}).get("name"),
+                            )
+                        )
 
                 room.vibe_profile.users_data[user.id] = UserVibeData(
-                    top_tracks=top_tracks,
+                    top_tracks=refined_tracks,
                 )
+
                 logger.debug(
-                    f"User Vibe Fetched for {user.name}: {len(top_tracks)} tracks."
+                    f"User Vibe Fetched for {user.name}: {len(refined_tracks)} tracks saved."
                 )
-                if top_tracks:
+                if refined_tracks:
                     logger.debug(
-                        f"Top Track: {top_tracks[0].get('name')} by {top_tracks[0]['artists'][0]['name']}"
+                        f"Top Vibe Track: {refined_tracks[0].name} by {refined_tracks[0].artist}"
                     )
+
             except Exception as e:
                 logger.error(f"Failed to fetch vibe profile for {user.id}: {e}")
 
     else:
         sid_map[sid] = {"room_id": room_id, "user_id": "anonymous"}
 
-    # Send current state
     await sio.emit("room_state", room.model_dump(), room=sid)
-    # Broadcast update
     await sio.emit("room_state", room.model_dump(), room=room_id)
 
 
@@ -108,8 +180,6 @@ async def leave_session(sid, data) -> None:
     if room_id:
         sio.leave_room(sid, room_id)
         if sid in sid_map:
-            # Logic similar to disconnect if needed, or just remove from map
-            # usually disconnect handles the cleanup
             pass
 
 
@@ -146,6 +216,7 @@ async def add_to_queue(sid, data) -> None:
             logger.debug(f"Emitting play_track for {new_track.name} in room {room_id}")
             await sio.emit("play_track", new_track.model_dump(), room=room_id)
             await sio.emit("room_state", room.model_dump(), room=room_id)
+            await trigger_dj_voice(room_id, new_track)
         else:
             room.queue.append(new_track)
             await sio.emit(
@@ -164,7 +235,6 @@ async def toggle_playback(sid, data) -> None:
         room = rooms[room_id]
         if room.current_track:
             room.is_playing = not room.is_playing
-            # Broadcast to all explicitly
             await sio.emit(
                 "playback_toggled", {"is_playing": room.is_playing}, room=room_id
             )
@@ -176,7 +246,6 @@ async def skip_song(sid, data) -> None:
     if room_id in rooms:
         room = rooms[room_id]
 
-        # Add current to history if it exists
         if room.current_track:
             room.history.insert(0, room.current_track)
             # Keep history size manageable
@@ -188,9 +257,8 @@ async def skip_song(sid, data) -> None:
             room.current_track = next_track
             room.is_playing = True
             await sio.emit("play_track", next_track.model_dump(), room=room_id)
-            await sio.emit(
-                "room_state", room.model_dump(), room=room_id
-            )  # Sync history/queue
+            await sio.emit("room_state", room.model_dump(), room=room_id)
+            await trigger_dj_voice(room_id, next_track)
         else:
             room.current_track = None
             room.is_playing = False

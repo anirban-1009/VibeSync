@@ -3,6 +3,7 @@ import urllib.parse
 from app.core.config import Settings
 from fastapi import APIRouter
 from fastapi.responses import RedirectResponse
+from spotipy.cache_handler import MemoryCacheHandler
 from spotipy.oauth2 import SpotifyOAuth
 
 settings = Settings.get_settings()
@@ -18,7 +19,9 @@ sp_oauth = SpotifyOAuth(
     client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET,
     redirect_uri=REDIRECT_URI,
-    scope="streaming user-read-email user-read-private user-modify-playback-state user-top-read",
+    scope="streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state user-read-currently-playing user-top-read",
+    show_dialog=True,
+    cache_handler=MemoryCacheHandler(),
 )
 
 

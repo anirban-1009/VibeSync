@@ -19,9 +19,19 @@ class Track(BaseModel):
     added_by: Optional[str] = "system"
 
 
+class VibeTrack(BaseModel):
+    id: str  # Spotify ID for seeding
+    name: str
+    artist: str
+    uri: str
+    popularity: Optional[int] = None
+    explicit: Optional[bool] = False
+    album: Optional[str] = None
+
+
 class UserVibeData(BaseModel):
-    top_tracks: List[dict] = []
-    top_artists: List[dict] = []
+    top_tracks: List[VibeTrack] = []
+    top_artists: List[dict] = []  # Can refine this later if we fetch artists explicitly
 
 
 class RoomVibeProfile(BaseModel):

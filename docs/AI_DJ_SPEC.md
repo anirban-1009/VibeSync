@@ -8,8 +8,8 @@ The **AI DJ** is an intelligent automated system designed to monitor the state o
 ### 1. Data Collection ("The Ears")
 To make intelligent decisions, the system must understand the users.
 - **Improved Permissions**: The Spotify OAuth scope must be expanded to include `user-top-read`.
-- **Room Vibe State**: A real-time aggregate of the musical preferences of all active users in the room.
-- **Session History**: A robust log of the last 20 played tracks, including their audio features (Energy, Tempo).
+- **Top Genres & Artists**: Identifying the preferred genres and artists of users in the room.
+- **Session History**: A robust log of the last 20 played tracks (Names, Artists).
 - **Active Vibe Input**: Explicit user requests (e.g., "I want to relax", "Play something pumped up").
 
 ### 2. Decision Engine ("The Brain" - Algorithmic)
@@ -18,9 +18,7 @@ The core logic that determines *what* to play.
 - **Algorithm**:
   - **Context**: The last 5 songs from `Session History`.
   - **Seeds**: Randomly selected artists/tracks from the active users in the room.
-  - **Targets**:
-    1.  **History Analysis**: Check if the last 3 songs had high energy (> 0.8). If so, maybe recommend a cooldown (0.6).
-    2.  **Vibe Input**: Override history if a user explicitly requested a mood.
+  - **Generative Vibe**: The LLM analyzes the metadata of recent tracks to determine the current "Simulated Vibe" (e.g. "Upbeat Pop").
   - **Filtration**: Ensures no duplicates from the immediate history or current queue.
 
 ### 3. Personality Engine ("The Voice" - LLM)
@@ -45,12 +43,12 @@ rooms[room_id] = {
         "users_data": {
             "user_id_1": {
                 "top_genres": ["pop", "house"],
-                "audio_features": {"energy": 0.8, "valence": 0.6}
+                "top_artists": ["Dua Lipa", "The Weeknd"]
             }
         },
         "room_aggregate": {
-            "target_energy": 0.75,
-            "target_danceability": 0.8
+            "top_genres": ["pop", "r-n-b"],
+            "derived_vibe": "Party"
         }
     },
     "ai_mode_enabled": True
@@ -67,7 +65,7 @@ rooms[room_id] = {
 -   **Model**: Support for local (Ollama/Llama-2/3) or Cloud (OpenAI GPT-4o-mini).
 -   **Capabilities**:
     1.  **Persona**: Generating DJ patter.
-    2.  **Mood Parsing**: Converting user text ("I'm sad") into Spotify Parameters (`valence: 0.2`).
+    2.  **Mood Parsing**: Converting user text ("I'm sad") into Spotify Seed Genres (`seed_genres: ["sad", "rainy-day"]`).
 
 ### TTS (Voice)
 -   **Provider**: ElevenLabs (High quality) or EdgeTTS (Free/Local).
@@ -82,7 +80,7 @@ rooms[room_id] = {
 
 2.  **User Sets Vibe (Optional)**:
     -   User types: "Let's party!"
-    -   LLM parses to: `{"min_energy": 0.8, "min_danceability": 0.7}`.
+    -   LLM parses to: `{"seed_genres": ["pop", "house", "dance"]}`.
     -   State saved to `rooms[room_id]["active_vibe"]`.
 
 3.  **Queue Check**:
@@ -103,4 +101,4 @@ rooms[room_id] = {
 
 ## Future Enhancements
 -   **Voice synthesis (TTS)**: Introducing tracks ("That was a banger from Anirban, here's one for the whole crew").
--   **Vibe Check UI**: Users voting 🔥 or 💧 to adjust the `target_energy` in real-time.
+-   **Vibe Check UI**: Users voting 🔥 or 💧 to adjust the room vibe.

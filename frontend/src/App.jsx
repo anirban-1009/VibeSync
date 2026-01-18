@@ -209,6 +209,33 @@ function App() {
       if (player) player.pause()
     }
 
+    function onDJCommentary(data) {
+      if (data) {
+        if (data.text) addLog(`DJ HAL: ${data.text}`)
+
+        if (data.audio_url) {
+          // Play server-side playing
+          const audio = new Audio(data.audio_url);
+          audio.volume = 1.0;
+
+          // Duck music volume
+          if (player) player.setVolume(0.2);
+
+          audio.play().catch(e => console.error("Audio playback error:", e));
+
+          audio.onended = () => {
+            // Restore volume
+            if (player) player.setVolume(0.5);
+          };
+        } else if (data.text) {
+          // Fallback to browser TTS if audio generation failed
+          const utterance = new SpeechSynthesisUtterance(data.text);
+          utterance.rate = 1.1;
+          window.speechSynthesis.speak(utterance);
+        }
+      }
+    }
+
     socket.on('connect', onConnect) // Need to bind connect explicitly if late bind
     socket.on('disconnect', onDisconnect)
     socket.on('room_state', onRoomState)
@@ -217,6 +244,7 @@ function App() {
     socket.on('queue_updated', onQueueUpdated)
     socket.on('playback_toggled', onPlaybackToggled)
     socket.on('stop_player', onStopPlayer)
+    socket.on('dj_commentary', onDJCommentary) // NEW LISTENER
 
     // Check initial connection
     if (socket.connected) setIsConnected(true)
@@ -230,6 +258,7 @@ function App() {
       socket.off('queue_updated', onQueueUpdated)
       socket.off('playback_toggled', onPlaybackToggled)
       socket.off('stop_player', onStopPlayer)
+      socket.off('dj_commentary', onDJCommentary) // CLEANUP
     }
   }, [player, deviceId, token, userProfile])
 

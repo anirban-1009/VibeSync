@@ -14,6 +14,32 @@ class EnvironmentConfigError(Exception):
         super().__init__("Environment Error: " + message)
 
 
+class LLMGenerationError(Exception):
+    """Raised when LLM text generation fails."""
+
+    def __init__(self, message: str, provider: str = "Unknown"):
+        self.message = f"[{provider}] {message}"
+        logger.error(f"LLM Error: {self.message}")
+        super().__init__(self.message)
+
+
+class TTSGenerationError(Exception):
+    """Raised when Text-to-Speech generation fails."""
+
+    def __init__(self, message: str):
+        logger.error(f"TTS Error: {message}")
+        super().__init__(message)
+
+
+class SpotifyAPIError(Exception):
+    """Raised when critical Spotify API calls fail."""
+
+    def __init__(self, message: str, status_code: int = 500):
+        self.message = f"[{status_code}] {message}"
+        logger.error(f"Spotify API Error: {self.message}")
+        super().__init__(self.message)
+
+
 def validate_environment_settings(settings: "Settings") -> tuple[str, str, str, str]:
     """
     Extracts and validates environment settings.
