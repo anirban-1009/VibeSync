@@ -1,6 +1,7 @@
 import os
 
 import socketio
+from app.core.config import Settings
 from app.routers.auth import router as auth_router
 from app.version import __version__
 from dotenv import load_dotenv
@@ -16,9 +17,22 @@ app = FastAPI(version=__version__)
 os.makedirs("static/voices", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+
+settings = Settings.get_settings()
+
+origins = [
+    settings.frontend_url,
+    "http://localhost:5173",
+    "http://localhost:3000",
+]
+
+# Add any extra origins from env if needed
+if settings.frontend_url.endswith("/"):
+    origins.append(settings.frontend_url[:-1])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -30,7 +44,7 @@ socket_app = socketio.ASGIApp(sio, app)
 app.include_router(auth_router)
 
 # Import events to register handlers
-import app.events  # noqa
+from app import events  # noqa
 
 
 @app.get("/")
