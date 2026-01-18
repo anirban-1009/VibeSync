@@ -14,3 +14,4 @@ coverage/
 node_modules/
 backend/.cache
 backend/.coverage
+backend/static/voices/*
