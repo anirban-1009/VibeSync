@@ -12,13 +12,13 @@ async def test_parse_mood_llm_success():
         mock_get_client.return_value = mock_client
 
         async def mock_generate(*args, **kwargs):
-            return '{"target_energy": 0.95, "target_danceability": 0.9}'
+            return '{"seed_genres": ["techno", "electronic"], "target_energy": 0.9}'
 
         mock_client.generate = mock_generate
 
         result = await parse_mood("Generate high energy music")
-        assert result["target_energy"] == 0.95
-        assert result["target_danceability"] == 0.9
+        assert result["seed_genres"] == ["techno", "electronic"]
+        assert result["target_energy"] == 0.9
 
 
 @pytest.mark.asyncio
@@ -34,8 +34,7 @@ async def test_parse_mood_fallback_study():
         mock_client.generate = mock_fail
 
         result = await parse_mood("I want study mode")
-        assert result["target_energy"] == 0.3
-        assert result["target_instrumentalness"] == 0.8
+        assert result["seed_genres"] == ["classical", "ambient", "study"]
 
 
 @pytest.mark.asyncio
@@ -54,8 +53,8 @@ async def test_parse_mood_fallback_party():
         mock_client.generate = mock_fail
 
         result = await parse_mood("Let's party hard")
-        assert result["target_energy"] == 0.85
-        assert result["min_tempo"] == 120
+        assert result["seed_genres"] == ["pop", "dance", "house"]
+        assert result["target_popularity"] == 80
 
 
 @pytest.mark.asyncio
@@ -70,8 +69,7 @@ async def test_parse_mood_fallback_chill():
         mock_client.generate = mock_fail
 
         result = await parse_mood("chill vibes")
-        assert result["target_energy"] == 0.5
-        assert result["target_valence"] == 0.5
+        assert result["seed_genres"] == ["acoustic", "chill", "indie-pop"]
 
 
 @pytest.mark.asyncio
