@@ -9,7 +9,7 @@ export default function Player({ currentTrack, isPlaying, progress, duration, on
     }
 
     return (
-        <div className="card now-playing" style={{ textAlign: 'center' }}>
+        <div className="card now-playing" style={{ textAlign: 'center', alignItems: 'center' }}>
             {currentTrack ? (
                 <>
                     <img src={currentTrack.image} alt="Album Art" className="album-art" style={{ width: '250px', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }} />
