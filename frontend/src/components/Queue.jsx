@@ -3,12 +3,21 @@ import '../styles/Queue.css'
 
 export default function Queue({ queue, history, activeTab, setActiveTab, users, onRemove, onReQueue }) {
 
-    const getUserInfo = (userId) => {
-        return users.find(u => u.id === userId) || { name: '?', image: null }
-    }
+
 
     const renderItem = (track, i, isHistory = false) => {
-        const addedByUser = getUserInfo(track.added_by)
+        // Use embedded info if available, otherwise fallback to finding active user
+        let addedByName = track.added_by_name || '?'
+        let addedByImage = track.added_by_image || null
+
+        if (addedByName === '?' && track.added_by && track.added_by !== 'system') {
+            const foundUser = users.find(u => u.id === track.added_by)
+            if (foundUser) {
+                addedByName = foundUser.name
+                addedByImage = foundUser.image
+            }
+        }
+
         return (
             <div key={i} className={`queue-item ${isHistory ? 'history-item' : ''}`} style={{
                 display: 'flex',
@@ -26,15 +35,13 @@ export default function Queue({ queue, history, activeTab, setActiveTab, users, 
                 </div>
 
                 {/* Added By Avatar */}
-                {addedByUser && (
-                    <div title={`Added by ${addedByUser.name}`}>
-                        {addedByUser.image ? (
-                            <img src={addedByUser.image} className="added-by-avatar" alt={addedByUser.name} style={{ opacity: isHistory ? 0.6 : 1 }} />
-                        ) : (
-                            <div className="added-by-initial">{addedByUser.name?.[0]}</div>
-                        )}
-                    </div>
-                )}
+                <div title={`Added by ${addedByName}`}>
+                    {addedByImage ? (
+                        <img src={addedByImage} className="added-by-avatar" alt={addedByName} style={{ opacity: isHistory ? 0.6 : 1 }} />
+                    ) : (
+                        <div className="added-by-initial">{addedByName?.[0]}</div>
+                    )}
+                </div>
 
                 {isHistory ? (
                     <button
