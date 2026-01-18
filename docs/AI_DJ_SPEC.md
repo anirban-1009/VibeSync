@@ -65,7 +65,7 @@ rooms[room_id] = {
 -   **Model**: Support for local (Ollama/Llama-2/3) or Cloud (OpenAI GPT-4o-mini).
 -   **Capabilities**:
     1.  **Persona**: Generating DJ patter.
-    2.  **Mood Parsing**: Converting user text ("I'm sad") into Spotify Parameters (`valence: 0.2`).
+    2.  **Mood Parsing**: Converting user text ("I'm sad") into Spotify Seed Genres (`seed_genres: ["sad", "rainy-day"]`).
 
 ### TTS (Voice)
 -   **Provider**: ElevenLabs (High quality) or EdgeTTS (Free/Local).
@@ -80,7 +80,7 @@ rooms[room_id] = {
 
 2.  **User Sets Vibe (Optional)**:
     -   User types: "Let's party!"
-    -   LLM parses to: `{"min_energy": 0.8, "min_danceability": 0.7}`.
+    -   LLM parses to: `{"seed_genres": ["pop", "house", "dance"]}`.
     -   State saved to `rooms[room_id]["active_vibe"]`.
 
 3.  **Queue Check**:
@@ -101,4 +101,4 @@ rooms[room_id] = {
 
 ## Future Enhancements
 -   **Voice synthesis (TTS)**: Introducing tracks ("That was a banger from Anirban, here's one for the whole crew").
--   **Vibe Check UI**: Users voting 🔥 or 💧 to adjust the `target_energy` in real-time.
+-   **Vibe Check UI**: Users voting 🔥 or 💧 to adjust the room vibe.
