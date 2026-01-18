@@ -17,7 +17,7 @@ settings = Settings.get_settings()
 BASE_URL = settings.backend_url
 
 
-async def generate_voice_clip(text: str, voice: str = "en-US-ChristopherNeural") -> str:
+async def generate_voice_clip(text: str, voice: str = "en-US-SteffanNeural") -> str:
     """
     Generate a TTS audio clip using EdgeTTS and save it to the static directory.
 
