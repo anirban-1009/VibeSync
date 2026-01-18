@@ -1,10 +1,60 @@
 import uuid
 
 from app.server import sio
+from app.services.llm import generate_dj_script
 from app.services.spotify_client import SpotifyService
 from app.state import rooms, sid_map
 from app.utils.logger import logger
 from app.utils.models import RoomState, RoomUser, Track, UserVibeData, VibeTrack
+
+
+async def trigger_dj_voice(room_id: str, current_track: Track) -> None:
+    """Helper to generate and emit DJ commentary."""
+    room = rooms.get(room_id)
+    if not room or not room.ai_mode_enabled:
+        return
+
+    try:
+        next_song = room.queue[0] if room.queue else None
+
+        added_by_name = "someone"
+        if current_track.added_by and current_track.added_by not in (
+            "system",
+            "anonymous",
+        ):
+            for u in room.users:
+                if u.id == current_track.added_by:
+                    added_by_name = u.name
+                    break
+
+        context = {
+            "current_song_name": current_track.name,
+            "current_song_artist": current_track.artist,
+            "next_song_name": next_song.name if next_song else "nothing queued",
+            "next_song_artist": next_song.artist if next_song else "unknown",
+            "added_by_user": added_by_name,
+            "vibe_description": "keeping it fresh",
+        }
+
+        script = await generate_dj_script(context)
+
+        audio_url = None
+        if script:
+            try:
+                from app.services.voice import generate_voice_clip
+
+                audio_url = await generate_voice_clip(script)
+            except Exception as e:
+                logger.error(f"TTS generation failed: {e}")
+
+        if script:
+            await sio.emit(
+                "dj_commentary", {"text": script, "audio_url": audio_url}, room=room_id
+            )
+            logger.info(f"DJ Commentary emitted for room {room_id}")
+
+    except Exception as e:
+        logger.error(f"Failed to generate DJ commentary: {e}")
 
 
 @sio.event
@@ -38,14 +88,12 @@ async def join_room(sid, data) -> None:
 
     await sio.enter_room(sid, room_id)
 
-    # Init room if not exists
     if room_id not in rooms:
         rooms[room_id] = RoomState()
 
     room = rooms[room_id]
 
-    # Store user info
-    if user_profile:
+    if user_profile and user_profile.get("id"):
         user = RoomUser(
             id=user_profile.get("id"),
             name=user_profile.get("display_name"),
@@ -53,7 +101,6 @@ async def join_room(sid, data) -> None:
             if user_profile.get("images")
             else None,
         )
-        # Avoid duplicates
         existing = [u for u in room.users if u.id != user.id]
         existing.append(user)
         room.users = existing
@@ -123,9 +170,7 @@ async def join_room(sid, data) -> None:
     else:
         sid_map[sid] = {"room_id": room_id, "user_id": "anonymous"}
 
-    # Send current state
     await sio.emit("room_state", room.model_dump(), room=sid)
-    # Broadcast update
     await sio.emit("room_state", room.model_dump(), room=room_id)
 
 
@@ -135,8 +180,6 @@ async def leave_session(sid, data) -> None:
     if room_id:
         sio.leave_room(sid, room_id)
         if sid in sid_map:
-            # Logic similar to disconnect if needed, or just remove from map
-            # usually disconnect handles the cleanup
             pass
 
 
@@ -173,6 +216,7 @@ async def add_to_queue(sid, data) -> None:
             logger.debug(f"Emitting play_track for {new_track.name} in room {room_id}")
             await sio.emit("play_track", new_track.model_dump(), room=room_id)
             await sio.emit("room_state", room.model_dump(), room=room_id)
+            await trigger_dj_voice(room_id, new_track)
         else:
             room.queue.append(new_track)
             await sio.emit(
@@ -191,7 +235,6 @@ async def toggle_playback(sid, data) -> None:
         room = rooms[room_id]
         if room.current_track:
             room.is_playing = not room.is_playing
-            # Broadcast to all explicitly
             await sio.emit(
                 "playback_toggled", {"is_playing": room.is_playing}, room=room_id
             )
@@ -203,7 +246,6 @@ async def skip_song(sid, data) -> None:
     if room_id in rooms:
         room = rooms[room_id]
 
-        # Add current to history if it exists
         if room.current_track:
             room.history.insert(0, room.current_track)
             # Keep history size manageable
@@ -215,9 +257,8 @@ async def skip_song(sid, data) -> None:
             room.current_track = next_track
             room.is_playing = True
             await sio.emit("play_track", next_track.model_dump(), room=room_id)
-            await sio.emit(
-                "room_state", room.model_dump(), room=room_id
-            )  # Sync history/queue
+            await sio.emit("room_state", room.model_dump(), room=room_id)
+            await trigger_dj_voice(room_id, next_track)
         else:
             room.current_track = None
             room.is_playing = False
