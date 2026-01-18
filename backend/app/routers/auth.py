@@ -37,7 +37,7 @@ async def login() -> RedirectResponse:
 async def callback(code: str) -> RedirectResponse:
     logger.info(f"Callback received. Code: {code[:10]}... URI: {REDIRECT_URI}")
     try:
-        token_info = sp_oauth.get_access_token(code)
+        token_info = sp_oauth.get_access_token(code, check_cache=False)
     except Exception as e:
         logger.error(f"Error exchanging token: {e}")
         return RedirectResponse(f"{FRONTEND_URL}?error=token_exchange_failed")
