@@ -31,3 +31,14 @@ app.include_router(auth_router)
 
 # Import events to register handlers
 import app.events  # noqa
+
+
+@app.get("/")
+async def health_check():
+    """Health check endpoint to verify backend is running."""
+    return {
+        "status": "online",
+        "version": __version__,
+        "docs": "/docs",
+        "routes": [{"path": route.path, "name": route.name} for route in app.routes],
+    }
