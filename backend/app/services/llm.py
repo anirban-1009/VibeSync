@@ -6,6 +6,7 @@ import httpx
 from app.core.config import Settings
 from app.prompts.dj_persona import DJ_SYSTEM_PROMPT
 from app.utils.exceptions import LLMGenerationError
+from google import genai
 
 logger = logging.getLogger(__name__)
 
@@ -85,27 +86,20 @@ class OllamaClient(LLMClient):
 class GeminiClient(LLMClient):
     """Client for Google Gemini API."""
 
-    def __init__(self, api_key: str, model: str = "gemini-pro"):
-        self.api_key = api_key
+    def __init__(self, api_key: str, model: str = "gemini-1.5-flash"):
+        self.client = genai.Client(api_key=api_key)
         self.model = model
-        self.url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
     async def generate(self, system_prompt: str, user_prompt: str) -> str:
-        params = {"key": self.api_key}
         full_text = f"{system_prompt}\n\n{user_prompt}"
 
-        data = {"contents": [{"parts": [{"text": full_text}]}]}
-
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.post(
-                    self.url, params=params, json=data, timeout=10.0
-                )
-                response.raise_for_status()
-                result = response.json()
-                return result["candidates"][0]["content"]["parts"][0]["text"].strip()
-            except Exception as e:
-                raise LLMGenerationError(str(e), provider="Gemini") from e
+        try:
+            response = await self.client.aio.models.generate_content(
+                model=self.model, contents=full_text
+            )
+            return response.text.strip()
+        except Exception as e:
+            raise LLMGenerationError(str(e), provider="Gemini") from e
 
 
 def get_llm_client() -> LLMClient:
