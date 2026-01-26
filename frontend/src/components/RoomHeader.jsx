@@ -1,7 +1,19 @@
-import '../styles/RoomHeader.css'
+import '../styles/RoomHeader.css';
 
 
-export default function RoomHeader({ roomName, isConnected, users, onCopyLink, onLeave }) {
+export default function RoomHeader({ roomName, isConnected, users, onCopyLink, onLeave, userProfile }) {
+    // Ensure current user is visible in the list (in the center)
+    const currentUserInList = users.find(u => u.name === userProfile?.display_name);
+    const displayUsers = [...users];
+
+    if (userProfile && !currentUserInList) {
+        displayUsers.unshift({
+            id: userProfile.id,
+            name: userProfile.display_name,
+            image: userProfile.images?.[0]?.url
+        });
+    }
+
     return (
         <header className="room-header">
             <div className="center-header">
@@ -13,7 +25,7 @@ export default function RoomHeader({ roomName, isConnected, users, onCopyLink, o
                 </h1>
 
                 <div className="users-list">
-                    {users.map((u, i) => (
+                    {displayUsers.map((u, i) => (
                         <div key={i} className="user-avatar-container">
                             <div className="user-avatar">
                                 {u.image ? <img src={u.image} alt={u.name} style={{ width: '100%', height: '100%' }} /> : u.name[0]}

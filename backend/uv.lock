@@ -1113,7 +1113,7 @@ wheels = [
 [[package]]
 name = "vibesync-backend"
 version = "0.2.1"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "edge-tts" },
     { name = "fastapi" },

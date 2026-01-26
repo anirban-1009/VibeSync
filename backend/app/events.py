@@ -69,12 +69,21 @@ async def disconnect(sid) -> None:
         room_id = user_info.get("room_id")
         user_id = user_info.get("user_id")
 
-        if room_id and room_id in rooms:
-            room = rooms[room_id]
-            room.users = [u for u in room.users if u.id != user_id]
-            await sio.emit("room_state", room.model_dump(), room=room_id)
+        del sid_map[sid]  # Remove current socket first
 
-        del sid_map[sid]
+        if room_id and room_id in rooms:
+            # Check if this user has other active sessions in this room
+            is_still_active = False
+            for other_sid, info in sid_map.items():
+                if info.get("room_id") == room_id and info.get("user_id") == user_id:
+                    is_still_active = True
+                    break
+
+            # Only remove user from room if no active sessions remain
+            if not is_still_active:
+                room = rooms[room_id]
+                room.users = [u for u in room.users if u.id != user_id]
+                await sio.emit("room_state", room.model_dump(), room=room_id)
 
 
 @sio.event
