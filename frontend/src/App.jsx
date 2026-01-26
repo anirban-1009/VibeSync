@@ -12,6 +12,8 @@ import RoomHeader from './components/RoomHeader'
 import Search from './components/Search'
 
 
+import { VERSION } from './version'
+
 // Connect to the backend
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 const socket = io(BACKEND_URL)
@@ -474,6 +476,16 @@ function App() {
           </div>
         </div>
       )}
+      <div style={{
+        position: 'fixed',
+        bottom: '10px',
+        right: '10px',
+        fontSize: '0.8rem',
+        opacity: 0.7,
+        color: '#888'
+      }}>
+        v{VERSION}
+      </div>
     </div>
   )
 }
