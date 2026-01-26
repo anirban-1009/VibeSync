@@ -7,7 +7,9 @@ services:
     rootDir: backend
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.5
+        value: 3.13.1
+      - key: UV_PYTHON_DOWNLOADS-
+        value: 1
       - key: BACKEND_URL
         sync: false
       - key: FRONTEND_URL
