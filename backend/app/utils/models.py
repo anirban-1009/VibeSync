@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -39,6 +39,7 @@ class UserVibeData(BaseModel):
 class RoomVibeProfile(BaseModel):
     users_data: Dict[str, UserVibeData] = Field(default_factory=dict)
     room_aggregate: Dict[str, float] = Field(default_factory=dict)
+    active_mood: Dict[str, Any] = Field(default_factory=dict)
 
 
 class RoomUser(BaseModel):
