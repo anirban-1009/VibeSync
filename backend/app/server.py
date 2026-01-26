@@ -70,3 +70,10 @@ async def health_check():
         "docs": "/docs",
         "routes": [{"path": route.path, "name": route.name} for route in app.routes],
     }
+
+
+def run_dev():
+    """Entry point for uv run dev"""
+    import uvicorn
+
+    uvicorn.run("app.server:socket_app", host="0.0.0.0", port=8000, reload=True)

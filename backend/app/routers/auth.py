@@ -53,8 +53,13 @@ async def callback(code: str) -> RedirectResponse:
     try:
         token_info = sp_oauth.get_access_token(code, check_cache=False)
     except Exception as e:
+        import traceback
+
         logger.error(f"Error exchanging token: {e}")
-        return RedirectResponse(f"{FRONTEND_URL}?error=token_exchange_failed")
+        logger.error(traceback.format_exc())
+        return RedirectResponse(
+            f"{FRONTEND_URL}?error=token_exchange_failed&details={str(e)}"
+        )
 
     access_token = token_info["access_token"]
     _refresh_token = token_info["refresh_token"]
