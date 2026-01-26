@@ -4,7 +4,7 @@ from app.core.config import Settings
 from app.utils.logger import logger
 from fastapi import APIRouter
 from fastapi.responses import RedirectResponse
-from spotipy.cache_handler import MemoryCacheHandler
+from spotipy.cache_handler import CacheHandler
 from spotipy.oauth2 import SpotifyOAuth
 
 settings = Settings.get_settings()
@@ -16,13 +16,27 @@ CLIENT_SECRET = settings.client_secret
 REDIRECT_URI = settings.redirect_uri
 FRONTEND_URL = settings.frontend_url
 
+
+class NoCacheHandler(CacheHandler):
+    """
+    A cache handler that does nothing.
+    Used to prevent server-side caching of user tokens in the global SpotifyOAuth instance.
+    """
+
+    def get_cached_token(self):
+        return None
+
+    def save_token_to_cache(self, token_info):
+        pass
+
+
 sp_oauth = SpotifyOAuth(
     client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET,
     redirect_uri=REDIRECT_URI,
     scope="streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state user-read-currently-playing user-top-read",
     show_dialog=True,
-    cache_handler=MemoryCacheHandler(),
+    cache_handler=NoCacheHandler(),
 )
 
 
