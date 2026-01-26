@@ -10,6 +10,7 @@ import Player from './components/Player'
 import Queue from './components/Queue'
 import RoomHeader from './components/RoomHeader'
 import Search from './components/Search'
+import ShareModal from './components/ShareModal'
 import VibeCheck from './components/VibeCheck'
 
 
@@ -25,6 +26,7 @@ function App() {
   const [roomId, setRoomId] = useState('')
   const [joinedRoom, setJoinedRoom] = useState(null)
   const [activeVibe, setActiveVibe] = useState(null)
+  const [showShareModal, setShowShareModal] = useState(false)
 
   const [token, setToken] = useState(null)
   const [player, setPlayer] = useState(null)
@@ -317,35 +319,13 @@ function App() {
     window.history.replaceState({}, document.title, "/")
   }
 
-  const copyLink = () => {
+  const getRoomUrl = () => {
     const origin = window.location.origin;
-    const url = `${origin}/?room=${joinedRoom}`;
+    return `${origin}/?room=${joinedRoom}`;
+  }
 
-    const copyToClipboard = (text) => {
-      if (navigator.clipboard && window.isSecureContext) {
-        return navigator.clipboard.writeText(text);
-      } else {
-        let textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = "fixed";
-        textArea.style.left = "-9999px";
-        textArea.style.top = "0";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        return new Promise((res, rej) => {
-          document.execCommand('copy') ? res() : rej();
-          textArea.remove();
-        });
-      }
-    }
-
-    copyToClipboard(url)
-      .then(() => alert('Room Link Copied! Send it to your friends.'))
-      .catch(err => {
-        console.error('Async: Could not copy text: ', err);
-        prompt("Copy this link:", url);
-      });
+  const openShareModal = () => {
+    setShowShareModal(true);
   }
 
   const handleSetVibe = (vibe) => {
@@ -460,9 +440,15 @@ function App() {
             roomName={joinedRoom}
             isConnected={isConnected}
             users={usersInRoom}
-            onCopyLink={copyLink}
+            onCopyLink={openShareModal}
             onLeave={leaveRoom}
             userProfile={userProfile}
+          />
+
+          <ShareModal
+            isOpen={showShareModal}
+            onClose={() => setShowShareModal(false)}
+            roomUrl={getRoomUrl()}
           />
 
           <div className="main-panel">
