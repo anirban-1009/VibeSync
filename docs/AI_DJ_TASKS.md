@@ -55,21 +55,21 @@
 
 ## Phase 4: Integration & Triggers
 
-- [ ] **Task 4.1: Auto-Queue Trigger**
+- [x] **Task 4.1: Auto-Queue Trigger**
     -   **File**: `backend/app/events.py`
     -   **Description**: In the `skip_song` handlers, check if `queue` is empty.
     -   **Action**: Call Recommendation Service -> Call LLM Service (for intro) -> Add to queue.
 
-- [ ] **Task 4.2: Frontend Audio Player**
+- [x] **Task 4.2: Frontend Audio Player**
     -   **File**: `frontend/src/components/Player.jsx`
     -   **Description**: Add a secondary hidden `<audio>` element to play the DJ ID/Intro *before* the Spotify Track starts.
 
-- [ ] **Task 4.3: Vibe Input UI**
+- [x] **Task 4.3: Vibe Input UI**
     -   **File**: `frontend/src/components/VibeCheck.jsx`
     -   **Description**: A text input / chat bubble where users can say "I'm feeling X".
     -   **Event**: Emits `set_vibe` socket event.
 
-- [ ] **Task 4.4: Enhanced Sharing**
+- [x] **Task 4.4: Enhanced Sharing**
     -   **File**: `frontend/src/components/ShareModal.jsx` (New Component)
     -   **Description**: Improve the sharing experience.
         -   **QR Code**: Display a QR code for easy mobile joining.

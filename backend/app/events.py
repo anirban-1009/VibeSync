@@ -1,7 +1,9 @@
 import uuid
 
+from app.logic.mood_parser import parse_mood
 from app.server import sio
 from app.services.llm import generate_dj_script
+from app.services.recommendations import get_recommendations
 from app.services.spotify_client import SpotifyService
 from app.state import rooms, sid_map
 from app.utils.logger import logger
@@ -114,9 +116,9 @@ async def join_room(sid, data) -> None:
         existing.append(user)
         room.users = existing
 
-        sid_map[sid] = {"room_id": room_id, "user_id": user.id}
-
         token = data.get("token")
+        sid_map[sid] = {"room_id": room_id, "user_id": user.id, "token": token}
+
         if token:
             try:
                 raw_tracks = await music_service.fetch_user_top_items(
@@ -268,6 +270,67 @@ async def skip_song(sid, data) -> None:
             if len(room.history) > 20:
                 room.history.pop()
 
+        # Auto-Queue Logic (Task 4.1)
+        if len(room.queue) == 0:
+            user_session = sid_map.get(sid)
+            token = user_session.get("token") if user_session else None
+
+            if token:
+                logger.debug(
+                    f"Auto-queueing for room {room_id} using token from {user_session.get('user_id')}"
+                )
+                seeds = {}
+                history_items = room.history[:5]
+                # Try to use current track as seed
+                if (
+                    room.current_track
+                    and room.current_track.uri
+                    and "spotify:track:" in room.current_track.uri
+                ):
+                    try:
+                        track_id = room.current_track.uri.split(":")[-1]
+                        seeds["seed_tracks"] = [track_id]
+                    except Exception:
+                        pass
+
+                try:
+                    recs = await get_recommendations(
+                        token, seeds, history_items, room.vibe_profile.active_mood
+                    )
+                    if recs:
+                        top_rec = recs[0]
+                        # Convert to Track
+                        artist_name = (
+                            top_rec["artists"][0]["name"]
+                            if top_rec["artists"]
+                            else "Unknown"
+                        )
+                        image_url = (
+                            top_rec["album"]["images"][0]["url"]
+                            if top_rec["album"]["images"]
+                            else None
+                        )
+
+                        auto_track = Track(
+                            uri=top_rec["uri"],
+                            name=top_rec["name"],
+                            artist=artist_name,
+                            image=image_url,
+                            duration_ms=top_rec["duration_ms"],
+                            uuid=str(uuid.uuid4()),
+                            added_by="system",
+                            added_by_name="DJ AI",
+                        )
+                        room.queue.append(auto_track)
+                        await sio.emit(
+                            "queue_updated",
+                            [t.model_dump() for t in room.queue],
+                            room=room_id,
+                        )
+                        logger.info(f"Auto-queued via AI: {auto_track.name}")
+                except Exception as e:
+                    logger.error(f"Auto-queue failed: {e}")
+
         if len(room.queue) > 0:
             next_track = room.queue.pop(0)
             room.current_track = next_track
@@ -296,3 +359,24 @@ async def remove_from_queue(sid, data) -> None:
             await sio.emit(
                 "queue_updated", [t.model_dump() for t in room.queue], room=room_id
             )
+
+
+@sio.event
+async def set_vibe(sid, data) -> None:
+    room_id = data.get("room_id")
+    vibe_text = data.get("vibe_text")
+
+    if room_id in rooms and vibe_text:
+        room = rooms[room_id]
+
+        # Parse Mood via LLM
+        targets = await parse_mood(vibe_text)
+
+        # Update Room Vibe
+        room.vibe_profile.active_mood = targets
+
+        logger.info(f"Vibe set to '{vibe_text}' for room {room_id}: {targets}")
+
+        await sio.emit(
+            "vibe_updated", {"vibe": vibe_text, "targets": targets}, room=room_id
+        )
