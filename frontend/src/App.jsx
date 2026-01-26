@@ -12,6 +12,7 @@ import RoomHeader from './components/RoomHeader'
 import Search from './components/Search'
 
 
+import { logger } from './utils/logger'
 import { VERSION } from './version'
 
 // Connect to the backend
@@ -42,6 +43,11 @@ function App() {
 
   const [logs, setLogs] = useState([])
 
+  useEffect(() => {
+    logger.debug('Current Room Users State:', usersInRoom)
+  }, [usersInRoom])
+
+
   const searchTimeout = useRef(null)
 
   useEffect(() => {
@@ -70,10 +76,9 @@ function App() {
     })
       .then(res => res.json())
       .then(data => {
-        console.log('User Profile:', data)
         setUserProfile(data)
       })
-      .catch(err => console.error('Failed to fetch profile', err))
+      .catch(err => { })
   }, [token])
 
   useEffect(() => {
@@ -94,17 +99,16 @@ function App() {
       });
 
       player.addListener('ready', ({ device_id }) => {
-        console.log('Ready with Device ID', device_id);
         setDeviceId(device_id);
         addLog(`Spotify Player Ready: ${device_id}`)
       });
 
       player.addListener('not_ready', ({ device_id }) => {
-        console.log('Device ID has gone offline', device_id);
+        logger.warn('Device ID has gone offline', device_id);
       });
 
       player.addListener('authentication_error', ({ message }) => {
-        console.error(message);
+        logger.error('Authentication Error:', message);
         setToken(null)
         localStorage.removeItem('spotify_access_token')
       });
@@ -188,10 +192,10 @@ function App() {
 
         if (!response.ok) {
           const errorData = await response.json();
-          console.error('Spotify API Error:', errorData);
+          logger.error('Spotify API Error:', errorData);
         }
       } catch (e) {
-        console.error('Network/Fetch Error:', e)
+        logger.error('Network/Fetch Error:', e)
       }
     }
 
@@ -223,7 +227,7 @@ function App() {
           // Duck music volume
           if (player) player.setVolume(0.2);
 
-          audio.play().catch(e => console.error("Audio playback error:", e));
+          audio.play().catch(e => logger.error("Audio playback error:", e));
 
           audio.onended = () => {
             // Restore volume
@@ -415,34 +419,37 @@ function App() {
 
   return (
     <div className="app-container">
+      {userProfile && userProfile.product !== 'premium' && (
+        <div style={{
+          backgroundColor: '#e74c3c',
+          color: 'white',
+          padding: '10px',
+          textAlign: 'center',
+          borderRadius: '8px',
+          marginBottom: '1rem',
+          marginTop: '1rem',
+          fontWeight: 'bold'
+        }}>
+          ⚠️ Playback is limited: Spotify Premium is required to listen to music in this app. You can still manage the queue!
+        </div>
+      )}
       {!joinedRoom ? (
         <JoinRoom
           roomId={roomId}
-          setRoomId={setRoomId}
+          setRoomId={(val) => setRoomId(val.toLowerCase())}
           onJoin={joinRoom}
           onLogout={handleLogout}
+          userProfile={userProfile}
         />
       ) : (
         <div className="dashboard">
-          {userProfile && userProfile.product !== 'premium' && (
-            <div style={{
-              backgroundColor: '#e74c3c',
-              color: 'white',
-              padding: '10px',
-              textAlign: 'center',
-              borderRadius: '8px',
-              marginBottom: '1rem',
-              fontWeight: 'bold'
-            }}>
-              ⚠️ Playback is limited: Spotify Premium is required to listen to music in this app. You can still manage the queue!
-            </div>
-          )}
           <RoomHeader
             roomName={joinedRoom}
             isConnected={isConnected}
             users={usersInRoom}
             onCopyLink={copyLink}
             onLeave={leaveRoom}
+            userProfile={userProfile}
           />
 
           <div className="main-panel">
