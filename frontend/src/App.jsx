@@ -422,6 +422,19 @@ function App() {
         />
       ) : (
         <div className="dashboard">
+          {userProfile && userProfile.product !== 'premium' && (
+            <div style={{
+              backgroundColor: '#e74c3c',
+              color: 'white',
+              padding: '10px',
+              textAlign: 'center',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              fontWeight: 'bold'
+            }}>
+              ⚠️ Playback is limited: Spotify Premium is required to listen to music in this app. You can still manage the queue!
+            </div>
+          )}
           <RoomHeader
             roomName={joinedRoom}
             isConnected={isConnected}
