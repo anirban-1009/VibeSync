@@ -6,6 +6,7 @@ from app.events import (
     disconnect,
     join_room,
     remove_from_queue,
+    set_vibe,
     skip_song,
     toggle_playback,
 )
@@ -184,3 +185,39 @@ async def test_remove_from_queue(mock_rooms, mock_sid_map, mock_sio):
     await remove_from_queue("sid", {"room_id": room_id, "track_uuid": "uuid1"})
 
     assert len(room.queue) == 0
+
+
+@patch("app.events.parse_mood", new_callable=AsyncMock)
+@patch("app.events.sio", new_callable=AsyncMock)
+@patch("app.events.sid_map", new_callable=dict)
+@patch("app.events.rooms", new_callable=dict)
+@pytest.mark.asyncio
+async def test_set_vibe(mock_rooms, mock_sid_map, mock_sio, mock_parse_mood):
+    room_id = "r1"
+    mock_rooms[room_id] = RoomState()
+    room = mock_rooms[room_id]
+
+    mock_parse_mood.return_value = {"seed_genres": ["chill"], "target_popularity": 50}
+
+    data = {"room_id": room_id, "vibe_text": "Chill vibes"}
+
+    await set_vibe("sid", data)
+
+    # Check parse_mood call
+    mock_parse_mood.assert_called_with("Chill vibes")
+
+    # Check room state update
+    assert room.vibe_profile.active_mood == {
+        "seed_genres": ["chill"],
+        "target_popularity": 50,
+    }
+
+    # Check emit
+    mock_sio.emit.assert_called_with(
+        "vibe_updated",
+        {
+            "vibe": "Chill vibes",
+            "targets": {"seed_genres": ["chill"], "target_popularity": 50},
+        },
+        room=room_id,
+    )
