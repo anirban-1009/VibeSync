@@ -2,7 +2,7 @@ services:
   - type: web
     name: vibesync-backend
     runtime: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install uv && uv sync
     startCommand: uvicorn app.server:socket_app --host 0.0.0.0 --port $PORT
     rootDir: backend
     envVars:
