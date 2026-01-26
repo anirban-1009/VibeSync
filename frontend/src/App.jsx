@@ -489,7 +489,10 @@ function App() {
         right: '10px',
         fontSize: '0.8rem',
         opacity: 0.7,
-        color: '#888'
+        color: 'rgba(255, 255, 255, 0.5)',
+        zIndex: 9999,
+        pointerEvents: 'none',
+        userSelect: 'none'
       }}>
         v{VERSION}
       </div>
