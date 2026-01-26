@@ -10,6 +10,7 @@ import Player from './components/Player'
 import Queue from './components/Queue'
 import RoomHeader from './components/RoomHeader'
 import Search from './components/Search'
+import VibeCheck from './components/VibeCheck'
 
 
 import { logger } from './utils/logger'
@@ -23,6 +24,7 @@ function App() {
   const [isConnected, setIsConnected] = useState(socket.connected)
   const [roomId, setRoomId] = useState('')
   const [joinedRoom, setJoinedRoom] = useState(null)
+  const [activeVibe, setActiveVibe] = useState(null)
 
   const [token, setToken] = useState(null)
   const [player, setPlayer] = useState(null)
@@ -173,6 +175,11 @@ function App() {
       setQueue(newQueue)
     }
 
+    function onVibeUpdated(data) {
+      setActiveVibe(data.vibe)
+      addLog(`Vibe Shift: ${data.vibe}`)
+    }
+
     async function onPlayTrack(track) {
       setCurrentTrack(track)
       setIsPlaying(true)
@@ -248,6 +255,7 @@ function App() {
     socket.on('user_list_updated', onUserListUpdated)
     socket.on('play_track', onPlayTrack)
     socket.on('queue_updated', onQueueUpdated)
+    socket.on('vibe_updated', onVibeUpdated)
     socket.on('playback_toggled', onPlaybackToggled)
     socket.on('stop_player', onStopPlayer)
     socket.on('dj_commentary', onDJCommentary) // NEW LISTENER
@@ -262,6 +270,7 @@ function App() {
       socket.off('user_list_updated', onUserListUpdated)
       socket.off('play_track', onPlayTrack)
       socket.off('queue_updated', onQueueUpdated)
+      socket.off('vibe_updated', onVibeUpdated)
       socket.off('playback_toggled', onPlaybackToggled)
       socket.off('stop_player', onStopPlayer)
       socket.off('dj_commentary', onDJCommentary) // CLEANUP
@@ -337,6 +346,10 @@ function App() {
         console.error('Async: Could not copy text: ', err);
         prompt("Copy this link:", url);
       });
+  }
+
+  const handleSetVibe = (vibe) => {
+    socket.emit('set_vibe', { room_id: joinedRoom, vibe_text: vibe })
   }
 
   const handleSearch = (e) => {
@@ -463,6 +476,7 @@ function App() {
                 onSkip={skipSong}
                 onSeek={seek}
               />
+              <VibeCheck activeVibe={activeVibe} onSetVibe={handleSetVibe} />
               <Search
                 query={searchQuery}
                 setQuery={handleSearch}
@@ -470,6 +484,7 @@ function App() {
                 onAdd={addToQueue}
               />
             </div>
+
 
             <Queue
               queue={queue}
