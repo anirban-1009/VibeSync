@@ -234,9 +234,24 @@ function App() {
       if (data) {
         if (data.text) addLog(`DJ HAL: ${data.text}`)
 
+        // 1. Force Stop Browser TTS
+        window.speechSynthesis.cancel();
+
+        // 2. Force Stop Custom Audio
+        if (window.djAudio) {
+          window.djAudio.pause();
+          window.djAudio.currentTime = 0; // Reset
+          window.djAudio.src = ""; // Detach
+          window.djAudio = null;
+
+          // If we cut off audio, we must restore volume immediately
+          if (player) player.setVolume(volume / 100);
+        }
+
         if (data.audio_url) {
           // Play server-side playing
           const audio = new Audio(data.audio_url);
+          window.djAudio = audio; // Store reference to cancel later
           audio.volume = 1.0;
 
           // Duck music volume
@@ -247,6 +262,9 @@ function App() {
           audio.onended = () => {
             // Restore volume
             if (player) player.setVolume(volume / 100);
+            if (window.djAudio === audio) {
+              window.djAudio = null;
+            }
           };
         } else if (data.text) {
           // Fallback to browser TTS if audio generation failed
