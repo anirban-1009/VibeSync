@@ -9,8 +9,11 @@ export default function Queue({ queue, history, activeTab, setActiveTab, users, 
         // Use embedded info if available, otherwise fallback to finding active user
         let addedByName = track.added_by_name || '?'
         let addedByImage = track.added_by_image || null
+        let isAi = track.added_by === 'system'
 
-        if (addedByName === '?' && track.added_by && track.added_by !== 'system') {
+        if (isAi) {
+            addedByName = 'AI DJ'
+        } else if (addedByName === '?' && track.added_by) {
             const foundUser = users.find(u => u.id === track.added_by)
             if (foundUser) {
                 addedByName = foundUser.name
@@ -23,10 +26,11 @@ export default function Queue({ queue, history, activeTab, setActiveTab, users, 
                 display: 'flex',
                 alignItems: 'center',
                 gap: '10px',
-                background: isHistory ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
+                background: isHistory ? 'rgba(255,255,255,0.02)' : (isAi ? 'linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(100,200,255,0.05) 100%)' : 'rgba(255,255,255,0.05)'),
                 padding: '8px',
                 borderRadius: '6px',
-                opacity: isHistory ? 0.7 : 1
+                opacity: isHistory ? 0.7 : 1,
+                borderLeft: isAi ? '3px solid var(--primary-color)' : '3px solid transparent'
             }}>
                 <img src={track.image} alt="art" style={{ width: '40px', height: '40px', borderRadius: '4px', filter: isHistory ? 'grayscale(50%)' : 'none' }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -36,7 +40,17 @@ export default function Queue({ queue, history, activeTab, setActiveTab, users, 
 
                 {/* Added By Avatar */}
                 <div title={`Added by ${addedByName}`}>
-                    {addedByImage ? (
+                    {isAi ? (
+                        <div style={{
+                            width: '30px', height: '30px', borderRadius: '50%',
+                            background: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 0 10px var(--primary-color)'
+                        }}>
+                            <svg style={{ width: '20px', height: '20px', fill: '#000' }} viewBox="0 0 24 24">
+                                <path d="M12,2A2,2 0 0,1 14,4C14,4.74 13.6,5.39 13,5.73V7H19A2,2 0 0,1 21,9V20A2,2 0 0,1 19,22H5A2,2 0 0,1 3,20V9A2,2 0 0,1 5,7H11V5.73C10.4,5.39 10,4.74 10,4A2,2 0 0,1 12,2M7.5,13A1.5,1.5 0 0,0 6,14.5A1.5,1.5 0 0,0 7.5,16A1.5,1.5 0 0,0 9,14.5A1.5,1.5 0 0,0 7.5,13M16.5,13A1.5,1.5 0 0,0 15,14.5A1.5,1.5 0 0,0 16.5,16A1.5,1.5 0 0,0 18,14.5A1.5,1.5 0 0,0 16.5,13M12,17A3,3 0 0,0 9.13,15.76L9.6,17.65C10.68,17.38 11.83,17.62 12.68,18.27L13.82,16.8C13.3,16.39 12.67,16.12 12,16V17Z" />
+                            </svg>
+                        </div>
+                    ) : addedByImage ? (
                         <img src={addedByImage} className="added-by-avatar" alt={addedByName} style={{ opacity: isHistory ? 0.6 : 1 }} />
                     ) : (
                         <div className="added-by-initial">{addedByName?.[0]}</div>
