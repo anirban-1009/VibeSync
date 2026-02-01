@@ -44,6 +44,8 @@ function App() {
   const [activeTab, setActiveTab] = useState('queue')
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
+  const [repeatMode, setRepeatMode] = useState('off') // 'off', 'context', 'track'
+  const [volume, setVolume] = useState(50)
 
   const [logs, setLogs] = useState([])
 
@@ -224,13 +226,32 @@ function App() {
       if (player) player.pause()
     }
 
+    function onRepeatModeChanged(data) {
+      setRepeatMode(data.state)
+    }
+
     function onDJCommentary(data) {
       if (data) {
         if (data.text) addLog(`DJ HAL: ${data.text}`)
 
+        // 1. Force Stop Browser TTS
+        window.speechSynthesis.cancel();
+
+        // 2. Force Stop Custom Audio
+        if (window.djAudio) {
+          window.djAudio.pause();
+          window.djAudio.currentTime = 0; // Reset
+          window.djAudio.src = ""; // Detach
+          window.djAudio = null;
+
+          // If we cut off audio, we must restore volume immediately
+          if (player) player.setVolume(volume / 100);
+        }
+
         if (data.audio_url) {
           // Play server-side playing
           const audio = new Audio(data.audio_url);
+          window.djAudio = audio; // Store reference to cancel later
           audio.volume = 1.0;
 
           // Duck music volume
@@ -240,7 +261,10 @@ function App() {
 
           audio.onended = () => {
             // Restore volume
-            if (player) player.setVolume(0.5);
+            if (player) player.setVolume(volume / 100);
+            if (window.djAudio === audio) {
+              window.djAudio = null;
+            }
           };
         } else if (data.text) {
           // Fallback to browser TTS if audio generation failed
@@ -260,6 +284,7 @@ function App() {
     socket.on('vibe_updated', onVibeUpdated)
     socket.on('playback_toggled', onPlaybackToggled)
     socket.on('stop_player', onStopPlayer)
+    socket.on('repeat_mode_changed', onRepeatModeChanged)
     socket.on('dj_commentary', onDJCommentary) // NEW LISTENER
 
     // Check initial connection
@@ -275,9 +300,10 @@ function App() {
       socket.off('vibe_updated', onVibeUpdated)
       socket.off('playback_toggled', onPlaybackToggled)
       socket.off('stop_player', onStopPlayer)
+      socket.off('repeat_mode_changed', onRepeatModeChanged)
       socket.off('dj_commentary', onDJCommentary) // CLEANUP
     }
-  }, [player, deviceId, token, userProfile])
+  }, [player, deviceId, token, userProfile, volume])
 
   // Progress Interval for smoother UI
   useEffect(() => {
@@ -384,6 +410,25 @@ function App() {
     socket.emit('toggle_playback', { room_id: joinedRoom })
   }
 
+  const toggleRepeat = () => {
+    const modes = ['off', 'context', 'track']
+    const nextIndex = (modes.indexOf(repeatMode) + 1) % modes.length
+    const nextMode = modes[nextIndex]
+
+    // Optimistic update
+    setRepeatMode(nextMode)
+
+    // Send to backend
+    socket.emit('set_repeat_mode', { room_id: joinedRoom, state: nextMode })
+  }
+
+  const handleVolumeChange = (newVol) => {
+    setVolume(newVol)
+    if (player) {
+      player.setVolume(newVol / 100).catch(e => console.error(e))
+    }
+  }
+
   const removeFromQueue = (uuid) => {
     socket.emit('remove_from_queue', { room_id: joinedRoom, track_uuid: uuid })
   }
@@ -461,6 +506,10 @@ function App() {
                 onToggle={togglePlayback}
                 onSkip={skipSong}
                 onSeek={seek}
+                repeatMode={repeatMode}
+                onRepeat={toggleRepeat}
+                volume={volume}
+                onVolume={handleVolumeChange}
               />
               <VibeCheck activeVibe={activeVibe} onSetVibe={handleSetVibe} />
               <Search

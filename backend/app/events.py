@@ -271,63 +271,99 @@ async def skip_song(sid, data) -> None:
                 room.history.pop()
 
         # Auto-Queue Logic (Task 4.1)
-        if len(room.queue) == 0:
+        # Ensure buffer of at least 2 songs
+        if len(room.queue) < 2:
             user_session = sid_map.get(sid)
             token = user_session.get("token") if user_session else None
 
-            if token:
-                logger.debug(
-                    f"Auto-queueing for room {room_id} using token from {user_session.get('user_id')}"
+            # Fallback: If current user has no token (e.g. anonymous), try to find ANY user in the room with a token
+            if not token:
+                logger.warning(
+                    f"No token found for current socket {sid}, searching room participants..."
                 )
+                for s, info in sid_map.items():
+                    if info.get("room_id") == room_id and info.get("token"):
+                        token = info.get("token")
+                        logger.info(
+                            f"Using fallback token from user {info.get('user_id')}"
+                        )
+                        break
+
+            if not token:
+                logger.error(
+                    f"Auto-queue failed: No valid Spotify tokens found in room {room_id}"
+                )
+
+            if token:
+                logger.debug(f"Auto-queueing for room {room_id} (Token acquired)")
                 seeds = {}
                 history_items = room.history[:5]
-                # Try to use current track as seed
-                if (
-                    room.current_track
-                    and room.current_track.uri
-                    and "spotify:track:" in room.current_track.uri
-                ):
+                # Try to use current track as seed - even if it's moving to history
+                seed_track = room.current_track
+                if not seed_track and room.history:
+                    seed_track = room.history[0]
+
+                if seed_track and seed_track.uri and "spotify:track:" in seed_track.uri:
                     try:
-                        track_id = room.current_track.uri.split(":")[-1]
-                        seeds["seed_tracks"] = [track_id]
+                        track_id = seed_track.uri.split(":")[-1].strip()
+                        if track_id:
+                            seeds["seed_tracks"] = [track_id]
                     except Exception:
                         pass
 
                 try:
+                    logger.debug(f"Fetching recommendations with seeds: {seeds}")
                     recs = await get_recommendations(
                         token, seeds, history_items, room.vibe_profile.active_mood
                     )
-                    if recs:
-                        top_rec = recs[0]
-                        # Convert to Track
-                        artist_name = (
-                            top_rec["artists"][0]["name"]
-                            if top_rec["artists"]
-                            else "Unknown"
-                        )
-                        image_url = (
-                            top_rec["album"]["images"][0]["url"]
-                            if top_rec["album"]["images"]
-                            else None
-                        )
+                    logger.debug(f"Recommendations received: {len(recs)} tracks")
 
-                        auto_track = Track(
-                            uri=top_rec["uri"],
-                            name=top_rec["name"],
-                            artist=artist_name,
-                            image=image_url,
-                            duration_ms=top_rec["duration_ms"],
-                            uuid=str(uuid.uuid4()),
-                            added_by="system",
-                            added_by_name="DJ AI",
-                        )
-                        room.queue.append(auto_track)
-                        await sio.emit(
-                            "queue_updated",
-                            [t.model_dump() for t in room.queue],
-                            room=room_id,
-                        )
-                        logger.info(f"Auto-queued via AI: {auto_track.name}")
+                    if recs:
+                        # Add up to 3 tracks to buffer
+                        added_count = 0
+                        for rec in recs:
+                            if added_count >= 3:
+                                break
+
+                            # Sanity check if check already in queue
+                            if any(t.uri == rec["uri"] for t in room.queue):
+                                continue
+
+                            top_rec = rec
+                            # Convert to Track
+                            artist_name = (
+                                top_rec["artists"][0]["name"]
+                                if top_rec["artists"]
+                                else "Unknown"
+                            )
+                            image_url = (
+                                top_rec["album"]["images"][0]["url"]
+                                if top_rec["album"]["images"]
+                                else None
+                            )
+
+                            auto_track = Track(
+                                uri=top_rec["uri"],
+                                name=top_rec["name"],
+                                artist=artist_name,
+                                image=image_url,
+                                duration_ms=top_rec["duration_ms"],
+                                uuid=str(uuid.uuid4()),
+                                added_by="system",
+                                added_by_name="DJ AI",
+                            )
+                            room.queue.append(auto_track)
+                            added_count += 1
+
+                        if added_count > 0:
+                            await sio.emit(
+                                "queue_updated",
+                                [t.model_dump() for t in room.queue],
+                                room=room_id,
+                            )
+                            logger.info(f"Auto-queued via AI: {added_count} tracks")
+                    else:
+                        logger.warning("Recommendations service returned no tracks.")
                 except Exception as e:
                     logger.error(f"Auto-queue failed: {e}")
 
@@ -380,3 +416,30 @@ async def set_vibe(sid, data) -> None:
         await sio.emit(
             "vibe_updated", {"vibe": vibe_text, "targets": targets}, room=room_id
         )
+
+
+@sio.event
+async def set_repeat_mode(sid, data) -> None:
+    room_id = data.get("room_id")
+    state = data.get("state")  # 'track', 'context', 'off'
+
+    if room_id in rooms and state:
+        # Find a valid token
+        user_session = sid_map.get(sid)
+        token = user_session.get("token") if user_session else None
+
+        if not token:
+            for s, info in sid_map.items():
+                if info.get("room_id") == room_id and info.get("token"):
+                    token = info.get("token")
+                    break
+
+        if token:
+            success = await SpotifyService.set_repeat_mode(token, state)
+            if success:
+                # Update room state if needed, or just notify clients
+                await sio.emit("repeat_mode_changed", {"state": state}, room=room_id)
+        else:
+            logger.warning(
+                f"Could not set repeat mode: No token found in room {room_id}"
+            )

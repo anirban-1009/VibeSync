@@ -14,7 +14,7 @@ class SpotifyService:
     BASE_URL = "https://api.spotify.com/v1"
 
     @classmethod
-    async def _get(cls, url: str, token: str) -> Optional[Any]:
+    async def _get(cls, url: str, token: str, allow_404: bool = False) -> Optional[Any]:
         """
         Internal helper for GET requests with error handling.
         """
@@ -24,9 +24,14 @@ class SpotifyService:
                 response = await client.get(url, headers=headers)
                 if response.status_code == 200:
                     return response.json()
+                elif response.status_code == 404 and allow_404:
+                    logger.warning(
+                        f"Spotify resource not found (404) for URL: {url[:100]}..."
+                    )
+                    return None
                 else:
                     logger.error(
-                        f"Spotify API Error [{response.status_code}] for URL {url}: {response.text}"
+                        f"Spotify API Error [{response.status_code}] for URL {url[:100]}...: {response.text}"
                     )
                     return None
             except Exception as e:
@@ -80,11 +85,13 @@ class SpotifyService:
         return data.get("items", [])
 
     @classmethod
-    async def get_request(cls, url: str, token: str) -> Optional[Any]:
+    async def get_request(
+        cls, url: str, token: str, allow_404: bool = False
+    ) -> Optional[Any]:
         """
         Public wrapper for GET requests.
         """
-        return await cls._get(url, token)
+        return await cls._get(url, token, allow_404=allow_404)
 
     @classmethod
     async def get_audio_features(cls, token: str, track_ids: List[str]) -> List[dict]:
@@ -119,3 +126,19 @@ class SpotifyService:
             except Exception as e:
                 logger.error(f"HTTP Request Failed: {e}")
                 return []
+
+    @classmethod
+    async def set_repeat_mode(cls, token: str, state: str) -> bool:
+        """
+        Set repeat mode for the active device.
+        state options: 'track', 'context', 'off'
+        """
+        if state not in ("track", "context", "off"):
+            logger.warning(f"Invalid repeat state requested: {state}")
+            return False
+
+        url = f"{cls.BASE_URL}/me/player/repeat?state={state}"
+        success = await cls._put(url, token)
+        if success:
+            logger.info(f"Repeat mode set to '{state}'")
+        return success
