@@ -14,7 +14,7 @@ class SpotifyService:
     BASE_URL = "https://api.spotify.com/v1"
 
     @classmethod
-    async def _get(cls, url: str, token: str) -> Optional[Any]:
+    async def _get(cls, url: str, token: str, allow_404: bool = False) -> Optional[Any]:
         """
         Internal helper for GET requests with error handling.
         """
@@ -24,6 +24,11 @@ class SpotifyService:
                 response = await client.get(url, headers=headers)
                 if response.status_code == 200:
                     return response.json()
+                elif response.status_code == 404 and allow_404:
+                    logger.warning(
+                        f"Spotify resource not found (404) for URL: {url[:100]}..."
+                    )
+                    return None
                 else:
                     logger.error(
                         f"Spotify API Error [{response.status_code}] for URL {url[:100]}...: {response.text}"
@@ -80,11 +85,13 @@ class SpotifyService:
         return data.get("items", [])
 
     @classmethod
-    async def get_request(cls, url: str, token: str) -> Optional[Any]:
+    async def get_request(
+        cls, url: str, token: str, allow_404: bool = False
+    ) -> Optional[Any]:
         """
         Public wrapper for GET requests.
         """
-        return await cls._get(url, token)
+        return await cls._get(url, token, allow_404=allow_404)
 
     @classmethod
     async def get_audio_features(cls, token: str, track_ids: List[str]) -> List[dict]:

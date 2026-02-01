@@ -11,78 +11,88 @@ async def get_recommendations(
     history: List[Track],
     targets: Dict[str, Any],
 ) -> List[dict]:
-    """
-    Get recommendations using SEARCH API (fallback mode only).
-    Bypasses restricted /recommendations endpoint.
-    """
+    import asyncio
     import random
 
+    from app.services.recommendation_strategies import (
+        ArtistDerivedGenreStrategy,
+        DefaultFallbackStrategy,
+        GenreSeedStrategy,
+        RelatedArtistStrategy,
+        SeedArtistFallbackStrategy,
+        StrategyContext,
+    )
     from app.utils.logger import logger
 
-    # 1. Determine Search Strategy
-    # Priority: Genre -> Artist -> Track's Artist -> Default
+    # 1. Initialize Context
+    ctx = StrategyContext(seeds, token)
 
-    query = ""
+    # 2. Define Strategy Pipeline
+    strategies = [
+        GenreSeedStrategy(),
+        ArtistDerivedGenreStrategy(),
+        RelatedArtistStrategy(),
+        SeedArtistFallbackStrategy(),
+        DefaultFallbackStrategy(),
+    ]
 
-    candidate_genres = []
-    if seeds.get("seed_genres"):
-        candidate_genres.extend(seeds["seed_genres"])
-    elif targets.get("seed_genres"):
-        pass
+    # 3. Execute Strategies Sequentially
+    for strategy in strategies:
+        try:
+            await strategy.execute(ctx)
+        except Exception as e:
+            logger.error(f"Strategy {strategy.__class__.__name__} failed: {e}")
 
-    if candidate_genres:
-        chosen_genre = random.choice(candidate_genres)
-        query = f'genre:"{chosen_genre}"'
-        logger.debug(f"Search Strategy: Genre ({chosen_genre})")
+    # 4. Prepare Parallel Search Tasks
+    queries = ctx.queries
+    # Only keep unique queries to avoid duplicate work
+    unique_queries = list(set(queries))
+    # Limit max queries to 3 to prevent rate limits
+    if len(unique_queries) > 3:
+        unique_queries = random.sample(unique_queries, 3)
 
-    if not query:
-        seed_artist_id = (
-            seeds.get("seed_artists", [])[0] if seeds.get("seed_artists") else None
-        )
+    async def fetch_search_results(q: str, limit: int = 10) -> List[dict]:
+        try:
+            # Random offset for variety
+            offset = random.randint(0, 50)
+            encoded_q = urllib.parse.quote(q)
+            url = f"{SpotifyService.BASE_URL}/search?q={encoded_q}&type=track&limit={limit}&offset={offset}&market=from_token"
 
-        # If no explicit artist seed, check seed_tracks to find the artist
-        if not seed_artist_id and seeds.get("seed_tracks"):
-            track_id = seeds["seed_tracks"][0]
+            data = await SpotifyService.get_request(url, token, allow_404=True)
+            if data and "tracks" in data and data["tracks"]["items"]:
+                return data["tracks"]["items"]
 
-            track_data = await SpotifyService.get_request(
-                f"{SpotifyService.BASE_URL}/tracks/{track_id}", token
-            )
-            if track_data and "artists" in track_data:
-                artist_name = track_data["artists"][0]["name"]
-                # To prevent funneling, we ideally want 'Related' but we can't.
-                # So we search for the artist directly.
-                # To mitigate funneling, we depend on OFFSET randomization.
-                query = f'artist:"{artist_name}"'
-                logger.debug(f"Search Strategy: Artist ({artist_name})")
+            # Retry with offset 0 if failed
+            if offset > 0:
+                url0 = f"{SpotifyService.BASE_URL}/search?q={encoded_q}&type=track&limit={limit}&offset=0&market=from_token"
+                data0 = await SpotifyService.get_request(url0, token, allow_404=True)
+                if data0 and "tracks" in data0:
+                    return data0["tracks"]["items"]
 
-    if not query:
-        query = "genre:pop"
-        logger.debug("Search Strategy: Default (Pop)")
+            return []
+        except Exception as err:
+            logger.error(f"Search query '{q}' failed: {err}")
+            return []
 
-    # 2. Perform Search with Randomization
+    tasks = [fetch_search_results(q) for q in unique_queries]
 
     try:
-        # Getting a random offset is KEY to variety
-        offset = random.randint(0, 100)
-
-        encoded_query = urllib.parse.quote(query)
-        url = f"{SpotifyService.BASE_URL}/search?q={encoded_query}&type=track&limit=20&offset={offset}&market=from_token"
-
-        data = await SpotifyService.get_request(url, token)
-
-        if data and "tracks" in data and data["tracks"]["items"]:
-            tracks = data["tracks"]["items"]
-            random.shuffle(tracks)
-            return tracks
-
-        # If offset was too high and returned nothing, try offset 0
-        if offset > 0:
-            url_retry = f"{SpotifyService.BASE_URL}/search?q={encoded_query}&type=track&limit=20&offset=0&market=from_token"
-            data_retry = await SpotifyService.get_request(url_retry, token)
-            if data_retry and "tracks" in data_retry:
-                return data_retry["tracks"]["items"]
-
+        results_lists = await asyncio.gather(*tasks)
     except Exception as e:
-        logger.error(f"Search fallback failed: {e}")
+        logger.error(f"Async gathering of recommendations failed: {e}")
+        return []
 
-    return []
+    # 3. Aggregate and Shuffle
+    all_tracks = []
+    seen_ids = set()
+
+    for r_list in results_lists:
+        for t in r_list:
+            if t["id"] not in seen_ids:
+                all_tracks.append(t)
+                seen_ids.add(t["id"])
+
+    random.shuffle(all_tracks)
+
+    # Return top 20
+    return all_tracks[:20]
