@@ -15,3 +15,5 @@ node_modules/
 backend/.cache
 backend/.coverage
 backend/static/voices/*
+package-lock.json
+uv.lock
