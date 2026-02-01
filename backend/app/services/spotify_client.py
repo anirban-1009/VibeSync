@@ -26,7 +26,7 @@ class SpotifyService:
                     return response.json()
                 else:
                     logger.error(
-                        f"Spotify API Error [{response.status_code}] for URL {url}: {response.text}"
+                        f"Spotify API Error [{response.status_code}] for URL {url[:100]}...: {response.text}"
                     )
                     return None
             except Exception as e:
@@ -119,3 +119,19 @@ class SpotifyService:
             except Exception as e:
                 logger.error(f"HTTP Request Failed: {e}")
                 return []
+
+    @classmethod
+    async def set_repeat_mode(cls, token: str, state: str) -> bool:
+        """
+        Set repeat mode for the active device.
+        state options: 'track', 'context', 'off'
+        """
+        if state not in ("track", "context", "off"):
+            logger.warning(f"Invalid repeat state requested: {state}")
+            return False
+
+        url = f"{cls.BASE_URL}/me/player/repeat?state={state}"
+        success = await cls._put(url, token)
+        if success:
+            logger.info(f"Repeat mode set to '{state}'")
+        return success
