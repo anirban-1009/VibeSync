@@ -9,6 +9,7 @@ from app.services.spotify_client import SpotifyService
 from app.state import rooms, sid_map
 from app.utils.logger import logger
 from app.utils.models import RoomState, RoomUser, Track, UserVibeData, VibeTrack
+from app.utils.security import check_authorization, rate_limiter
 
 cleanup_tasks = {}
 
@@ -245,6 +246,15 @@ async def add_to_queue(sid, data) -> None:
     Data: { room_id, track: { uri, name, artist, image, duration_ms } }
     """
     room_id = data.get("room_id")
+
+    if not check_authorization(sid, room_id, sid_map):
+        return
+    if not rate_limiter.check_rate_limit(sid, "add_to_queue"):
+        await sio.emit(
+            "error", {"message": "Adding too fast! Chill for a sec."}, room=sid
+        )
+        return
+
     track_data = data.get("track")
     logger.debug(
         f"Request to add track: {track_data.get('name') if track_data else 'Unknown'}"
@@ -294,6 +304,10 @@ async def add_to_queue(sid, data) -> None:
 @sio.event
 async def toggle_playback(sid, data) -> None:
     room_id = data.get("room_id")
+
+    if not check_authorization(sid, room_id, sid_map):
+        return
+
     if room_id in rooms:
         room = rooms[room_id]
         if room.current_track:
@@ -306,6 +320,13 @@ async def toggle_playback(sid, data) -> None:
 @sio.event
 async def skip_song(sid, data) -> None:
     room_id = data.get("room_id")
+
+    if not check_authorization(sid, room_id, sid_map):
+        return
+    if not rate_limiter.check_rate_limit(sid, "skip_song"):
+        await sio.emit("error", {"message": "Skipping too fast!"}, room=sid)
+        return
+
     if room_id in rooms:
         room = rooms[room_id]
 
@@ -431,6 +452,9 @@ async def remove_from_queue(sid, data) -> None:
     room_id = data.get("room_id")
     track_uuid = data.get("track_uuid")
 
+    if not check_authorization(sid, room_id, sid_map):
+        return
+
     if room_id in rooms and track_uuid:
         room = rooms[room_id]
         original_len = len(room.queue)
@@ -446,6 +470,14 @@ async def remove_from_queue(sid, data) -> None:
 async def set_vibe(sid, data) -> None:
     room_id = data.get("room_id")
     vibe_text = data.get("vibe_text")
+
+    if not check_authorization(sid, room_id, sid_map):
+        return
+    if not rate_limiter.check_rate_limit(sid, "set_vibe"):
+        await sio.emit(
+            "error", {"message": "You're changing the vibe too often!"}, room=sid
+        )
+        return
 
     if room_id in rooms and vibe_text:
         room = rooms[room_id]
@@ -467,6 +499,11 @@ async def set_vibe(sid, data) -> None:
 async def set_repeat_mode(sid, data) -> None:
     room_id = data.get("room_id")
     state = data.get("state")  # 'track', 'context', 'off'
+
+    if not check_authorization(sid, room_id, sid_map):
+        return
+    if not rate_limiter.check_rate_limit(sid, "set_repeat_mode"):
+        return  # Silent fail for UI spam
 
     if room_id in rooms and state:
         # Find a valid token
@@ -494,6 +531,12 @@ async def set_repeat_mode(sid, data) -> None:
 async def set_volume(sid, data) -> None:
     room_id = data.get("room_id")
     volume = data.get("volume")
+
+    if not check_authorization(sid, room_id, sid_map):
+        return
+    # Volume slider emits many events, rate limiter essential
+    if not rate_limiter.check_rate_limit(sid, "set_volume"):
+        return
 
     if room_id in rooms and volume is not None:
         user_session = sid_map.get(sid)
