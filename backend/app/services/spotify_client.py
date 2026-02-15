@@ -142,3 +142,20 @@ class SpotifyService:
         if success:
             logger.info(f"Repeat mode set to '{state}'")
         return success
+
+    @classmethod
+    async def set_volume(cls, token: str, volume_percent: int) -> bool:
+        """
+        Set playback volume for the active device.
+        volume_percent: Integer 0 to 100.
+        """
+        if not (0 <= volume_percent <= 100):
+            logger.warning(f"Invalid volume level: {volume_percent}")
+            return False
+
+        url = f"{cls.BASE_URL}/me/player/volume?volume_percent={volume_percent}"
+        # This is a PUT request with no body, similar to seek
+        success = await cls._put(url, token)
+        if success:
+            logger.debug(f"Volume set to {volume_percent}%")
+        return success
