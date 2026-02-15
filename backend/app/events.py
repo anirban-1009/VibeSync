@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from app.logic.mood_parser import parse_mood
@@ -8,6 +9,29 @@ from app.services.spotify_client import SpotifyService
 from app.state import rooms, sid_map
 from app.utils.logger import logger
 from app.utils.models import RoomState, RoomUser, Track, UserVibeData, VibeTrack
+
+cleanup_tasks = {}
+
+
+async def cleanup_room(room_id: str) -> None:
+    """Waits for a timeout and then removes the room if it's still empty."""
+    logger.info(f"Scheduling cleanup for room {room_id} in 5 minutes.")
+    try:
+        await asyncio.sleep(300)  # 5 minutes
+
+        if room_id in rooms:
+            # Check if users have joined in the meantime
+            if len(rooms[room_id].users) == 0:
+                del rooms[room_id]
+                logger.info(f"Room {room_id} has been cleaned up due to inactivity.")
+            else:
+                logger.info(f"Room {room_id} cleanup aborted; users are present.")
+    except asyncio.CancelledError:
+        logger.info(f"Cleanup task for room {room_id} was cancelled.")
+        raise
+    finally:
+        if room_id in cleanup_tasks:
+            del cleanup_tasks[room_id]
 
 
 async def trigger_dj_voice(room_id: str, current_track: Track) -> None:
@@ -85,6 +109,22 @@ async def disconnect(sid) -> None:
             if not is_still_active:
                 room = rooms[room_id]
                 room.users = [u for u in room.users if u.id != user_id]
+
+                # Check if room is empty
+                if len(room.users) == 0:
+                    room.is_playing = False
+                    # Notify any listeners (though none should be left)
+                    await sio.emit(
+                        "playback_toggled", {"is_playing": False}, room=room_id
+                    )
+                    logger.info(
+                        f"Room {room_id} is empty. Pausing playback and scheduling cleanup."
+                    )
+                    # Cancel existing task if any
+                    if room_id in cleanup_tasks:
+                        cleanup_tasks[room_id].cancel()
+                    cleanup_tasks[room_id] = asyncio.create_task(cleanup_room(room_id))
+
                 await sio.emit("room_state", room.model_dump(), room=room_id)
 
 
@@ -98,6 +138,11 @@ async def join_room(sid, data) -> None:
         return
 
     await sio.enter_room(sid, room_id)
+
+    if room_id in cleanup_tasks:
+        logger.info(f"Room {room_id} became active. Cancelling cleanup.")
+        cleanup_tasks[room_id].cancel()
+        # cleanup_tasks[room_id] removal handled in finally block of task
 
     if room_id not in rooms:
         rooms[room_id] = RoomState()
