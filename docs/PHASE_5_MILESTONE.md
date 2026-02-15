@@ -14,8 +14,8 @@ Refine the core application by adding visual clarity to AI interactions, ensurin
 - **Scope**: Frontend (`Queue.jsx`)
 - **Description**: Update the queue item renderer to check for `added_by='system'`. Replace the generic avatar with a distinct "Robot" or "DJ" icon to visually distinguish AI contributions from user picks.
 - **Acceptance Criteria**:
-    - [ ] Tracks added by 'system' show unique icon.
-    - [ ] Tooltips identifying "Added by AI DJ".
+    - [x] Tracks added by 'system' show unique icon.
+    - [x] Tooltips identifying "Added by AI DJ".
 
 ### Task 5.2: Empty Room Lifecycle Logic
 - **Scope**: Backend (`events.py`)
@@ -30,8 +30,8 @@ Refine the core application by adding visual clarity to AI interactions, ensurin
     - **Backend**: Add `set_repeat` event handler calling Spotify `PUT /me/player/repeat`.
     - **Frontend**: Add cycle button (Off -> Context -> Track).
 - **Acceptance Criteria**:
-    - [ ] Clicking repeat button cycles states.
-    - [ ] Spotify player state reflects the change.
+    - [x] Clicking repeat button cycles states.
+    - [x] Spotify player state reflects the change.
 
 ### Task 5.4: Volume Control
 - **Scope**: Frontend (`Player.jsx`)

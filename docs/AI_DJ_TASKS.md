@@ -78,7 +78,7 @@
 
 ## Phase 5: Polish
 
-- [ ] **Task 5.1: Frontend Indicator**
+- [x] **Task 5.1: Frontend Indicator**
     -   **File**: `frontend/src/components/Queue.jsx`
     -   **Description**: Visually distinguish tracks added by the AI (e.g., a robot icon instead of a user avatar).
 
@@ -86,7 +86,7 @@
     -   **File**: `backend/app/events.py`
     -   **Description**: specific logic for when the room is empty vs just 1 user.
 
-- [ ] **Task 5.3: Loop / Repeat Mode**
+- [x] **Task 5.3: Loop / Repeat Mode**
     -   **File**: `frontend/src/components/Player.jsx` & `backend/app/services/spotify_client.py`
     -   **Description**: Add ability to loop current track or queue.
     -   **API**: Implement `put_repeat_mode` (off/track/context) via Spotify API.
