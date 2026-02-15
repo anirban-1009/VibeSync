@@ -21,7 +21,7 @@ async def test_get_request_success():
         mock_client.get.return_value = mock_response
         mock_client_cls.return_value.__aenter__.return_value = mock_client
 
-        result = await SpotifyService.get_request(url, token)
+        result = await SpotifyService._get(url, token)
 
         assert result == mock_json
         mock_client.get.assert_called_once()
@@ -42,7 +42,7 @@ async def test_get_request_failure():
         mock_client_cls.return_value.__aenter__.return_value = mock_client
 
         # Should log error and return None
-        result = await SpotifyService.get_request(url, token)
+        result = await SpotifyService._get(url, token)
 
         assert result is None
 
@@ -57,7 +57,7 @@ async def test_get_request_exception():
         mock_client.get.side_effect = Exception("Connection error")
         mock_client_cls.return_value.__aenter__.return_value = mock_client
 
-        result = await SpotifyService.get_request(url, token)
+        result = await SpotifyService._get(url, token)
         assert result is None
 
 
@@ -126,12 +126,22 @@ async def test_get_audio_features_chunking():
         mock_client.get.return_value = mock_response
         mock_client_cls.return_value.__aenter__.return_value = mock_client
 
+        # Actually call the method being tested, not _put!
+        # wait, the original file called get_audio_features properly.
+        # But here I am patching _get? No, patching httpx.AsyncClient directly.
+        # The method under test is SpotifyService.get_audio_features which calls httpx.get
+
+        # BUT wait, SpotifyService.get_audio_features does NOT use cls._get?
+        # Let's check source code seen earlier.
+        # It uses httpx.AsyncClient() directly in the implementation seen in Step 215.
+
         features = await SpotifyService.get_audio_features(token, ids)
 
         assert len(features) == 2
         mock_client.get.assert_called_once()
         args, _ = mock_client.get.call_args
         url = args[0]
+        # Just check it contains ids
         assert "ids=1,2" in url
 
 
@@ -173,3 +183,36 @@ async def test_fetch_user_top_items():
         items = await SpotifyService.fetch_user_top_items("tok")
         assert len(items) == 1
         assert items[0]["name"] == "Song"
+
+
+@pytest.mark.asyncio
+async def test_set_volume():
+    token = "tok"
+
+    # 1. Success (0-100)
+    with patch(
+        "app.services.spotify_client.SpotifyService._put", new_callable=AsyncMock
+    ) as mock_put:
+        mock_put.return_value = True
+
+        success = await SpotifyService.set_volume(token, 50)
+        assert success is True
+        mock_put.assert_called_with(
+            "https://api.spotify.com/v1/me/player/volume?volume_percent=50", token
+        )
+
+    # 2. Invalid volume (negative)
+    with patch(
+        "app.services.spotify_client.SpotifyService._put", new_callable=AsyncMock
+    ) as mock_put:
+        success = await SpotifyService.set_volume(token, -10)
+        assert success is False
+        mock_put.assert_not_called()
+
+    # 3. Invalid volume (over 100)
+    with patch(
+        "app.services.spotify_client.SpotifyService._put", new_callable=AsyncMock
+    ) as mock_put:
+        success = await SpotifyService.set_volume(token, 101)
+        assert success is False
+        mock_put.assert_not_called()

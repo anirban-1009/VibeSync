@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from app.events import join_room, set_repeat_mode, trigger_dj_voice
+from app.events import join_room, set_repeat_mode, set_volume, trigger_dj_voice
 from app.utils.models import RoomState, RoomUser, Track
 
 
@@ -160,3 +160,47 @@ async def test_join_room_fallback_logic(
     uris = [t.uri for t in user_vibe.top_tracks]
     assert "spotify:track:t1" in uris
     assert "spotify:track:t2" in uris
+
+
+@patch("app.events.sio", new_callable=AsyncMock)
+@patch("app.events.SpotifyService.set_volume")
+@patch("app.events.sid_map", new_callable=dict)
+@patch("app.events.rooms", new_callable=dict)
+@pytest.mark.asyncio
+async def test_set_volume_event(mock_rooms, mock_sid_map, mock_set_volume, mock_sio):
+    room_id = "vol_room"
+    sid = "vol_sid"
+    token = "vol_token"
+
+    mock_rooms[room_id] = RoomState()
+    # Case 1: Active user has token
+    mock_sid_map[sid] = {"room_id": room_id, "user_id": "uV", "token": token}
+
+    await set_volume(sid, {"room_id": room_id, "volume": 75})
+
+    mock_set_volume.assert_called_with(token, 75)
+
+    # Case 2: No token for user, finding fallback
+    mock_sid_map[sid] = {"room_id": room_id, "user_id": "uV"}  # No token
+    other_sid = "other_vol"
+    mock_sid_map[other_sid] = {
+        "room_id": room_id,
+        "user_id": "uFallback",
+        "token": "fallback_tok",
+    }
+
+    mock_set_volume.reset_mock()
+    await set_volume(sid, {"room_id": room_id, "volume": 30})
+
+    mock_set_volume.assert_called_with("fallback_tok", 30)
+
+    # Case 3: No token at all
+    mock_sid_map[other_sid] = {
+        "room_id": room_id,
+        "user_id": "uFallback",
+    }  # Remove token
+
+    mock_set_volume.reset_mock()
+    await set_volume(sid, {"room_id": room_id, "volume": 50})
+
+    mock_set_volume.assert_not_called()
