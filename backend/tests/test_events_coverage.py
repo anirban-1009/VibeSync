@@ -9,11 +9,19 @@ from app.utils.models import RoomState, RoomUser, Track
 @patch("app.events.sid_map", new_callable=dict)
 @patch("app.events.rooms", new_callable=dict)
 @patch("app.events.SpotifyService.set_repeat_mode")
+@patch("app.events.check_authorization")
+@patch("app.events.rate_limiter")
 @pytest.mark.asyncio
-async def test_set_repeat_mode(mock_set_repeat, mock_rooms, mock_sid_map, mock_sio):
+async def test_set_repeat_mode(
+    mock_rate_limiter, mock_auth, mock_set_repeat, mock_rooms, mock_sid_map, mock_sio
+):
     room_id = "test_room"
     sid = "test_sid"
     token = "test_token"
+
+    # Grant permissions
+    mock_auth.return_value = True
+    mock_rate_limiter.check_rate_limit.return_value = True
 
     mock_rooms[room_id] = RoomState()
     mock_sid_map[sid] = {"room_id": room_id, "user_id": "u1", "token": token}
@@ -166,11 +174,19 @@ async def test_join_room_fallback_logic(
 @patch("app.events.SpotifyService.set_volume")
 @patch("app.events.sid_map", new_callable=dict)
 @patch("app.events.rooms", new_callable=dict)
+@patch("app.events.check_authorization")
+@patch("app.events.rate_limiter")
 @pytest.mark.asyncio
-async def test_set_volume_event(mock_rooms, mock_sid_map, mock_set_volume, mock_sio):
+async def test_set_volume_event(
+    mock_rate_limiter, mock_auth, mock_rooms, mock_sid_map, mock_set_volume, mock_sio
+):
     room_id = "vol_room"
     sid = "vol_sid"
     token = "vol_token"
+
+    # Grant permissions
+    mock_auth.return_value = True
+    mock_rate_limiter.check_rate_limit.return_value = True
 
     mock_rooms[room_id] = RoomState()
     # Case 1: Active user has token
@@ -198,7 +214,8 @@ async def test_set_volume_event(mock_rooms, mock_sid_map, mock_set_volume, mock_
     mock_sid_map[other_sid] = {
         "room_id": room_id,
         "user_id": "uFallback",
-    }  # Remove token
+        "token": "",  # Remove token empty
+    }
 
     mock_set_volume.reset_mock()
     await set_volume(sid, {"room_id": room_id, "volume": 50})

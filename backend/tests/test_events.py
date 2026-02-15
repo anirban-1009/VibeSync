@@ -16,12 +16,20 @@ from app.utils.models import RoomState, Track
 @patch("app.events.sio", new_callable=AsyncMock)
 @patch("app.events.sid_map", new_callable=dict)
 @patch("app.events.rooms", new_callable=dict)
+@patch("app.events.check_authorization")
+@patch("app.events.rate_limiter")
 @pytest.mark.asyncio
-async def test_add_to_queue(mock_rooms, mock_sid_map, mock_sio):
+async def test_add_to_queue(
+    mock_rate_limiter, mock_auth, mock_rooms, mock_sid_map, mock_sio
+):
     # Setup state
     room_id = "test_room"
     sid = "test_sid"
     user_id = "user1"
+
+    # Grant permissions
+    mock_auth.return_value = True
+    mock_rate_limiter.check_rate_limit.return_value = True
 
     mock_rooms[room_id] = RoomState()
     mock_sid_map[sid] = {"room_id": room_id, "user_id": user_id}
@@ -100,11 +108,19 @@ async def test_join_room_new(mock_rooms, mock_sid_map, mock_sio, mock_fetch_top)
 @patch("app.events.sio", new_callable=AsyncMock)
 @patch("app.events.sid_map", new_callable=dict)
 @patch("app.events.rooms", new_callable=dict)
+@patch("app.events.check_authorization")
+@patch("app.events.rate_limiter")
 @pytest.mark.asyncio
-async def test_skip_song(mock_rooms, mock_sid_map, mock_sio):
+async def test_skip_song(
+    mock_rate_limiter, mock_auth, mock_rooms, mock_sid_map, mock_sio
+):
     room_id = "r1"
     mock_rooms[room_id] = RoomState()
     room = mock_rooms[room_id]
+
+    # Auth setup
+    mock_auth.return_value = True
+    mock_rate_limiter.check_rate_limit.return_value = True
 
     # 1. Skip with empty queue (stop player)
     await skip_song("sid", {"room_id": room_id})
@@ -156,13 +172,16 @@ async def test_disconnect_leave(mock_rooms, mock_sid_map, mock_sio):
 @patch("app.events.sio", new_callable=AsyncMock)
 @patch("app.events.sid_map", new_callable=dict)
 @patch("app.events.rooms", new_callable=dict)
+@patch("app.events.check_authorization")
 @pytest.mark.asyncio
-async def test_toggle_playback(mock_rooms, mock_sid_map, mock_sio):
+async def test_toggle_playback(mock_auth, mock_rooms, mock_sid_map, mock_sio):
     room_id = "r1"
     mock_rooms[room_id] = RoomState()
     room = mock_rooms[room_id]
     room.current_track = Track(uri="1", name="1", artist="a", duration_ms=100)
     room.is_playing = False
+
+    mock_auth.return_value = True
 
     await toggle_playback("sid", {"room_id": room_id})
 
@@ -173,11 +192,14 @@ async def test_toggle_playback(mock_rooms, mock_sid_map, mock_sio):
 @patch("app.events.sio", new_callable=AsyncMock)
 @patch("app.events.sid_map", new_callable=dict)
 @patch("app.events.rooms", new_callable=dict)
+@patch("app.events.check_authorization")
 @pytest.mark.asyncio
-async def test_remove_from_queue(mock_rooms, mock_sid_map, mock_sio):
+async def test_remove_from_queue(mock_auth, mock_rooms, mock_sid_map, mock_sio):
     room_id = "r1"
     mock_rooms[room_id] = RoomState()
     room = mock_rooms[room_id]
+
+    mock_auth.return_value = True
 
     t1 = Track(uri="1", name="1", artist="a", duration_ms=100, uuid="uuid1")
     room.queue = [t1]
@@ -191,11 +213,18 @@ async def test_remove_from_queue(mock_rooms, mock_sid_map, mock_sio):
 @patch("app.events.sio", new_callable=AsyncMock)
 @patch("app.events.sid_map", new_callable=dict)
 @patch("app.events.rooms", new_callable=dict)
+@patch("app.events.check_authorization")
+@patch("app.events.rate_limiter")
 @pytest.mark.asyncio
-async def test_set_vibe(mock_rooms, mock_sid_map, mock_sio, mock_parse_mood):
+async def test_set_vibe(
+    mock_rate_limiter, mock_auth, mock_rooms, mock_sid_map, mock_sio, mock_parse_mood
+):
     room_id = "r1"
     mock_rooms[room_id] = RoomState()
     room = mock_rooms[room_id]
+
+    mock_auth.return_value = True
+    mock_rate_limiter.check_rate_limit.return_value = True
 
     mock_parse_mood.return_value = {"seed_genres": ["chill"], "target_popularity": 50}
 

@@ -94,3 +94,15 @@
 - [x] **Task 5.4: Volume Control**
     -   **File**: `frontend/src/components/Player.jsx`
     -   **Description**: Add a volume slider component that updates the active device's volume level via the Spotify API.
+
+## Phase 6: Security and Stability
+
+- [x] **Task 6.1: Rate Limiting and Authorization**
+    -   **File**: `backend/app/utils/security.py` & `backend/app/events.py`
+    -   **Description**: Implement rate limiting for socket events and ensure users can only act on rooms they are joined to.
+    -   **Events Protected**: `add_to_queue`, `skip_song`, `set_vibe`, `set_repeat`, `set_volume`
+
+- [x] **Task 6.2: Unit Test Coverage**
+    -   **File**: `backend/tests/`
+    -   **Description**: Increase unit test coverage for the entire backend application to >= 80%.
+    -   **Status**: Complete (86% overall coverage).

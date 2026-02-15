@@ -1,3 +1,4 @@
+import urllib.parse
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -11,7 +12,6 @@ async def test_get_recommendations_basic():
     history = []
     targets = {"target_energy": 0.5}
 
-    # The new logic expects search results in data['tracks']['items']
     mock_search_response = {
         "tracks": {
             "items": [
@@ -20,13 +20,9 @@ async def test_get_recommendations_basic():
             ]
         }
     }
-
-    # Mock track details for seed resolution
     mock_track_data = {
         "artists": [{"id": "a1", "name": "Seed Artist", "genres": ["pop"]}]
     }
-
-    # Mock artist details
     mock_artist_data = {"name": "Seed Artist", "genres": ["pop"]}
 
     with patch(
@@ -46,10 +42,7 @@ async def test_get_recommendations_basic():
         mock_get.side_effect = side_effect
 
         recs = await get_recommendations(token, seeds, history, targets)
-
-        # We generally expect results if the search returns items
         assert len(recs) >= 1
-        # The result logic shuffles, so we just check presence
         ids = [r["id"] for r in recs]
         assert "rec1" in ids or "rec2" in ids
 
@@ -57,7 +50,7 @@ async def test_get_recommendations_basic():
 @pytest.mark.asyncio
 async def test_get_recommendations_fallback():
     token = "test_token"
-    seeds = {}  # No seeds -> triggers default pop fallback
+    seeds = {}
     history = []
     targets = {}
 
@@ -68,8 +61,83 @@ async def test_get_recommendations_fallback():
         new_callable=AsyncMock,
     ) as mock_get:
         mock_get.return_value = mock_search_response
-
         recs = await get_recommendations(token, seeds, history, targets)
-
         assert len(recs) > 0
         assert recs[0]["id"] == "pop1"
+
+
+@pytest.mark.asyncio
+async def test_get_recommendations_complex():
+    token = "test_token"
+    seeds = {
+        "seed_genres": ["rock", "pop", "jazz", "blues"],
+        "seed_artists": ["a1"],
+    }
+    targets = {}
+
+    artist_resp = {"name": "SeedArtist", "genres": ["pop"], "id": "a1"}
+    related_resp = {"artists": [{"id": "rel1", "name": "Rel"}]}
+    search_resp = {"tracks": {"items": [{"id": "t1", "name": "T1"}]}}
+
+    async def side_effect(url, token, allow_404=False):
+        if "related-artists" in url:
+            return related_resp
+        if "/artists/" in url:
+            return artist_resp
+        if "/search" in url:
+            return search_resp
+        return None
+
+    with patch(
+        "app.services.spotify_client.SpotifyService.get_request",
+        new_callable=AsyncMock,
+    ) as mock_get:
+        mock_get.side_effect = side_effect
+
+        recs = await get_recommendations(token, seeds, [], targets)
+        assert len(recs) > 0
+
+        search_calls = [
+            c[0][0] for c in mock_get.call_args_list if "/search" in c[0][0]
+        ]
+        unique_qs = set()
+        for url in search_calls:
+            parsed = urllib.parse.urlparse(url)
+            params = urllib.parse.parse_qs(parsed.query)
+            if "q" in params:
+                unique_qs.add(params["q"][0])
+        assert len(unique_qs) <= 3
+
+
+@pytest.mark.asyncio
+async def test_search_retry_success():
+    token = "test_token"
+    seeds = {"seed_genres": ["rock"]}
+    history = []
+    targets = {}
+
+    # We want to force offset > 0 to test fallback
+    with patch("random.randint") as mock_randint:
+        mock_randint.return_value = 10  # Force offset=10
+
+        with patch(
+            "app.services.spotify_client.SpotifyService.get_request",
+            new_callable=AsyncMock,
+        ) as mock_get:
+
+            async def side_effect(url, token, allow_404=False):
+                if "offset=10" in url:
+                    return None  # Fail first
+                if "offset=0" in url:
+                    # Success retry
+                    return {
+                        "tracks": {"items": [{"id": "retry_track", "name": "Retry"}]}
+                    }
+                return None
+
+            mock_get.side_effect = side_effect
+
+            recs = await get_recommendations(token, seeds, history, targets)
+
+            assert len(recs) > 0
+            assert recs[0]["id"] == "retry_track"
