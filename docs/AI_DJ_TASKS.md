@@ -82,7 +82,7 @@
     -   **File**: `frontend/src/components/Queue.jsx`
     -   **Description**: Visually distinguish tracks added by the AI (e.g., a robot icon instead of a user avatar).
 
-- [ ] **Task 4.2: Empty State Handling**
+- [x] **Task 5.2: Empty State Handling**
     -   **File**: `backend/app/events.py`
     -   **Description**: specific logic for when the room is empty vs just 1 user.
 
