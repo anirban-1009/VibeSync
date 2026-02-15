@@ -37,5 +37,5 @@ Refine the core application by adding visual clarity to AI interactions, ensurin
 - **Scope**: Frontend (`Player.jsx`)
 - **Description**: Add a volume slider component that updates the active device's volume level via the Spotify API.
 - **Acceptance Criteria**:
-    - [ ] Slider controls local/remote volume.
-    - [ ] Visual feedback on volume level.
+    - [x] Slider controls local/remote volume.
+    - [x] Visual feedback on volume level.

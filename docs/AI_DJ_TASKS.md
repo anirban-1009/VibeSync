@@ -90,3 +90,7 @@
     -   **File**: `frontend/src/components/Player.jsx` & `backend/app/services/spotify_client.py`
     -   **Description**: Add ability to loop current track or queue.
     -   **API**: Implement `put_repeat_mode` (off/track/context) via Spotify API.
+
+- [x] **Task 5.4: Volume Control**
+    -   **File**: `frontend/src/components/Player.jsx`
+    -   **Description**: Add a volume slider component that updates the active device's volume level via the Spotify API.

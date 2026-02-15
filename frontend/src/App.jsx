@@ -427,6 +427,10 @@ function App() {
     if (player) {
       player.setVolume(newVol / 100).catch(e => console.error(e))
     }
+    // Also send to backend to control remote devices (Connect API)
+    if (joinedRoom) {
+      socket.emit('set_volume', { room_id: joinedRoom, volume: newVol })
+    }
   }
 
   const removeFromQueue = (uuid) => {

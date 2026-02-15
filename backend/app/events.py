@@ -488,3 +488,27 @@ async def set_repeat_mode(sid, data) -> None:
             logger.warning(
                 f"Could not set repeat mode: No token found in room {room_id}"
             )
+
+
+@sio.event
+async def set_volume(sid, data) -> None:
+    room_id = data.get("room_id")
+    volume = data.get("volume")
+
+    if room_id in rooms and volume is not None:
+        user_session = sid_map.get(sid)
+        token = user_session.get("token") if user_session else None
+
+        if not token:
+            for s, info in sid_map.items():
+                if info.get("room_id") == room_id and info.get("token"):
+                    token = info.get("token")
+                    break
+
+        if token:
+            await SpotifyService.set_volume(token, int(volume))
+            # No need to broadcast volume changes usually as it's often device specific,
+            # but if we wanted synchronized volume we could emit.
+            # For now, just control the device.
+        else:
+            logger.warning(f"Could not set volume: No token found in room {room_id}")
