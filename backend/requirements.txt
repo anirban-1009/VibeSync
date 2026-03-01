@@ -40,7 +40,7 @@ frozenlist==1.8.0
     # via
     #   aiohttp
     #   aiosignal
-google-auth==2.47.0
+google-auth==2.48.0
     # via google-genai
 google-genai==1.61.0
     # via vibesync-backend (pyproject.toml)
