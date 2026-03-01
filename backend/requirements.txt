@@ -93,7 +93,7 @@ python-socketio==5.16.0
     # via vibesync-backend (pyproject.toml)
 pyyaml==6.0.3
     # via uvicorn
-redis==7.1.0
+redis==7.2.1
     # via spotipy
 requests==2.32.5
     # via
