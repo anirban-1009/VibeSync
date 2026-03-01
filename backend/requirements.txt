@@ -81,7 +81,7 @@ pydantic==2.12.5
     # via
     #   fastapi
     #   google-genai
-pydantic-core==2.41.5
+pydantic-core==2.42.0
     # via pydantic
 python-dotenv==1.2.1
     # via
